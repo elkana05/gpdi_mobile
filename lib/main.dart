@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'features/home/ui/home_screen.dart';
+import 'features/home/ui/public_drawer.dart';
 
 // Import file internal proyek (Sesuaikan dengan nama package di pubspec.yaml Anda)
 import 'core/router/app_router.dart';
@@ -18,23 +20,19 @@ class MyHttpOverrides extends HttpOverrides {
   }
 }
 
-void main() async {
-  // 1. Wajib dipanggil jika ada kode async sebelum runApp
+void main() {
+  // 1. Inisialisasi binding Flutter sebelum menjalankan aplikasi
   WidgetsFlutterBinding.ensureInitialized();
 
   // 2. Terapkan bypass SSL khusus untuk tahap development
   HttpOverrides.global = MyHttpOverrides();
 
-  // 3. Inisialisasi AuthProvider di luar widget tree
-  // agar kita bisa mengecek status token sebelum aplikasi benar-benar tampil.
-  final authProvider = AuthProvider();
-  await authProvider.checkAuth();
-
   runApp(
     MultiProvider(
       providers: [
-        // Daftarkan AuthProvider agar bisa diakses di seluruh aplikasi
-        ChangeNotifierProvider.value(value: authProvider),
+        // AuthProvider tetap didaftarkan untuk kebutuhan layar lain,
+        // tetapi proses login sementara tidak diaktifkan.
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
 
         // Nantinya developer lain tinggal menambahkan Provider mereka di sini:
         // ChangeNotifierProvider(create: (_) => EventProvider()),
