@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../home/ui/public_drawer.dart';
-import '../../home/ui/app_bottom_navigation.dart';
+import '../../jemaatpublik/ui/public_drawer.dart';
+import '../../jemaatpublik/ui/app_bottom_navigation.dart';
 import '../../auth/ui/login_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -20,6 +20,7 @@ class ProfileScreen extends StatelessWidget {
         activeMenu: DrawerMenu.none,
       ),
       backgroundColor: softBg,
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -43,22 +44,33 @@ class ProfileScreen extends StatelessWidget {
           'Profil',
           style: TextStyle(
             color: navy,
-            fontSize: 22,
+            fontSize: 20,
             fontWeight: FontWeight.w900,
           ),
         ),
+        centerTitle: true,
       ),
       body: Stack(
         children: [
-          SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 36, 24, 140),
-            child: Column(
-              children: const [
-                _GuestProfileCard(),
-                SizedBox(height: 48),
-                _ChurchImageCard(),
-              ],
-            ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 36, 24, 140),
+                    child: Column(
+                      children: const [
+                        _GuestProfileCard(),
+                        SizedBox(height: 48),
+                        _ChurchImageCard(),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
 
           const Positioned(
@@ -124,7 +136,7 @@ class _GuestProfileCard extends StatelessWidget {
           const SizedBox(height: 20),
 
           const Text(
-            'Silakan login untuk mengakses fitur\nlengkap seperti rencana baca Alkitab\npersonal, pendaftaran pelayanan,\ndan informasi jemaat.',
+            'Silakan login untuk mengakses fitur lengkap seperti rencana baca Alkitab personal, request surat jemaat, dan jadwal ibadah rayon.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: ProfileScreen.textGrey,
@@ -165,26 +177,6 @@ class _GuestProfileCard extends StatelessWidget {
               ),
             ),
           ),
-
-          const SizedBox(height: 48),
-
-          Divider(
-            color: Colors.black.withOpacity(0.10),
-            thickness: 1,
-          ),
-
-          const SizedBox(height: 34),
-
-          const Text(
-            'GEREJA PANTEKOSTA DI INDONESIA',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: ProfileScreen.gold,
-              fontSize: 11,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 2.4,
-            ),
-          ),
         ],
       ),
     );
@@ -217,17 +209,12 @@ class _ChurchImageCard extends StatelessWidget {
               ),
             ),
           ),
-
           Center(
             child: Icon(
               Icons.church_outlined,
               size: 120,
               color: Colors.white.withOpacity(0.45),
             ),
-          ),
-
-          Container(
-            color: Colors.white.withOpacity(0.32),
           ),
         ],
       ),

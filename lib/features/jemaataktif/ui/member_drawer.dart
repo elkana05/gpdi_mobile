@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:provider/provider.dart';
 
-import '../../auth/ui/login_screen.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../../jemaatpublik/ui/home_screen.dart';
 import 'jadwal_rayon_screen.dart';
 import 'member_home_screen.dart';
 import 'request_surat_screen.dart';
+import 'member_pengumuman.dart';
 
 enum MemberDrawerMenu {
   beranda,
@@ -43,20 +45,22 @@ class MemberDrawer extends StatelessWidget {
   }
 
   Future<void> _logout(BuildContext context) async {
-    const secureStorage = FlutterSecureStorage();
+    // Gunakan AuthProvider agar state terupdate secara global
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-    await secureStorage.delete(key: 'access_token');
-    await secureStorage.delete(key: 'jwt_token');
-    await secureStorage.delete(key: 'user_role');
+    // Tutup drawer terlebih dahulu
+    Navigator.pop(context);
+
+    // Proses logout (menghapus token & reset user)
+    await authProvider.logout();
 
     if (!context.mounted) return;
 
-    Navigator.pop(context);
-
+    // Redirect ke Home Screen Publik (bukan Login Screen)
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
-        builder: (_) => const LoginScreen(),
+        builder: (_) => const HomeScreen(),
       ),
       (route) => false,
     );
@@ -76,7 +80,7 @@ class MemberDrawer extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.35),
+                color: Colors.black.withOpacity(0.35),
                 blurRadius: 26,
                 offset: const Offset(8, 10),
               ),
@@ -88,7 +92,7 @@ class MemberDrawer extends StatelessWidget {
               const _MemberDrawerHeader(),
               const SizedBox(height: 20),
               Divider(
-                color: Colors.white.withValues(alpha: 0.13),
+                color: Colors.white.withOpacity(0.13),
                 thickness: 1,
               ),
               const SizedBox(height: 28),
@@ -133,17 +137,11 @@ class MemberDrawer extends StatelessWidget {
                 title: 'Pengumuman',
                 isActive: activeMenu == MemberDrawerMenu.pengumuman,
                 onTap: () {
-                  if (activeMenu == MemberDrawerMenu.pengumuman) return;
-
-                  Navigator.pop(context);
-
-                  // Nanti diarahkan ke halaman Pengumuman Jemaat
-                  // Navigator.pushReplacement(
-                  //   context,
-                  //   MaterialPageRoute(
-                  //     builder: (_) => const MemberPengumumanScreen(),
-                  //   ),
-                  // );
+                  _goToPage(
+                    context,
+                    MemberDrawerMenu.pengumuman,
+                    const MemberPengumumanScreen(),
+                  );
                 },
               ),
               const Spacer(),
@@ -165,6 +163,8 @@ class _MemberDrawerHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final user = Provider.of<AuthProvider>(context).user;
+
     return Row(
       children: [
         Container(
@@ -184,22 +184,22 @@ class _MemberDrawerHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 14),
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Syalom',
+                'Syalom, ${user?.fullName?.split(" ").first ?? "Jemaat"}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
+                style: const TextStyle(
                   color: MemberDrawer.gold,
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              SizedBox(height: 2),
-              Text(
+              const SizedBox(height: 2),
+              const Text(
                 'Selamat Datang di GPdI',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -240,7 +240,7 @@ class _MemberDrawerItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: isActive
             ? Border.all(
-                color: Colors.white.withValues(alpha: 0.05),
+                color: Colors.white.withOpacity(0.05),
                 width: 1,
               )
             : null,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'public_drawer.dart';
+import 'app_bottom_navigation.dart';
 
 class ProfilGerejaScreen extends StatelessWidget {
   const ProfilGerejaScreen({super.key});
@@ -13,11 +14,14 @@ class ProfilGerejaScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       drawer: const PublicDrawer(
         activeMenu: DrawerMenu.profilGereja,
       ),
       backgroundColor: softBg,
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -45,125 +49,136 @@ class ProfilGerejaScreen extends StatelessWidget {
             fontWeight: FontWeight.w800,
           ),
         ),
+        centerTitle: true,
       ),
       body: Stack(
         children: [
-          SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 28, 24, 130),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const _HeroChurchCard(),
-                const SizedBox(height: 22),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 28, 24, 130),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const _HeroChurchCard(),
+                        const SizedBox(height: 22),
 
-                const Text(
-                  'Berdiri sebagai mercusuar iman di tengah masyarakat, GPdI Jemaat Sibulele memiliki akar sejarah yang kuat dalam gerakan Pentakosta di Indonesia.',
-                  style: TextStyle(
-                    color: textGrey,
-                    fontSize: 15,
-                    height: 1.65,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                        const Text(
+                          'Berdiri sebagai mercusuar iman di tengah masyarakat, GPdI Jemaat Sibulele memiliki akar sejarah yang kuat dalam gerakan Pentakosta di Indonesia.',
+                          style: TextStyle(
+                            color: textGrey,
+                            fontSize: 15,
+                            height: 1.65,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
 
-                const SizedBox(height: 18),
+                        const SizedBox(height: 18),
 
-                const _HistoryCard(
-                  title: 'Awal Mula',
-                  description:
-                  'Dimulai dari persekutuan doa kecil di tahun 1980-an, membawa api kegerakan ke wilayah Sibulele.',
-                  lineColor: gold,
-                ),
+                        const _HistoryCard(
+                          title: 'Awal Mula',
+                          description:
+                          'Dimulai dari persekutuan doa kecil di tahun 1980-an, membawa api kegerakan ke wilayah Sibulele.',
+                          lineColor: gold,
+                        ),
 
-                const SizedBox(height: 12),
+                        const SizedBox(height: 12),
 
-                const _HistoryCard(
-                  title: 'Pertumbuhan',
-                  description:
-                  'Melalui kesetiaan jemaat, kini telah menjadi pusat transformasi rohani yang berkembang pesat.',
-                  lineColor: navy,
-                ),
+                        const _HistoryCard(
+                          title: 'Pertumbuhan',
+                          description:
+                          'Melalui kesetiaan jemaat, kini telah menjadi pusat transformasi rohani yang berkembang pesat.',
+                          lineColor: navy,
+                        ),
 
-                const SizedBox(height: 36),
+                        const SizedBox(height: 36),
 
-                const _SectionTitle(
-                  title: 'Visi & Misi',
-                  showLine: true,
-                ),
+                        const _SectionTitle(
+                          title: 'Visi & Misi',
+                          showLine: true,
+                        ),
 
-                const SizedBox(height: 22),
+                        const SizedBox(height: 22),
 
-                const _VisionCard(),
+                        const _VisionCard(),
 
-                const SizedBox(height: 18),
+                        const SizedBox(height: 18),
 
-                const _MissionItem(
-                  icon: Icons.menu_book_outlined,
-                  iconBg: Color(0xFFFFE388),
-                  iconColor: navy,
-                  title: 'Pemberdayaan Rohani',
-                  description:
-                  'Membangun kedewasaan iman melalui pengajaran Alkitab yang mendalam.',
-                ),
+                        const _MissionItem(
+                          icon: Icons.menu_book_outlined,
+                          iconBg: Color(0xFFFFE388),
+                          iconColor: navy,
+                          title: 'Pemberdayaan Rohani',
+                          description:
+                          'Membangun kedewasaan iman melalui pengajaran Alkitab yang mendalam.',
+                        ),
 
-                const SizedBox(height: 14),
+                        const SizedBox(height: 14),
 
-                const _MissionItem(
-                  icon: Icons.groups_rounded,
-                  iconBg: Color(0xFFE6E3F8),
-                  iconColor: navy,
-                  title: 'Persekutuan Kasih',
-                  description:
-                  'Menciptakan komunitas yang saling mendukung dan melayani satu sama lain.',
-                ),
+                        const _MissionItem(
+                          icon: Icons.groups_rounded,
+                          iconBg: Color(0xFFE6E3F8),
+                          iconColor: navy,
+                          title: 'Persekutuan Kasih',
+                          description:
+                          'Menciptakan komunitas yang saling mendukung dan melayani satu sama lain.',
+                        ),
 
-                const SizedBox(height: 14),
+                        const SizedBox(height: 14),
 
-                const _MissionItem(
-                  icon: Icons.volunteer_activism_outlined,
-                  iconBg: Color(0xFFE6E3F8),
-                  iconColor: navy,
-                  title: 'Kesaksian Publik',
-                  description:
-                  'Menjadi garam dan terang bagi lingkungan sekitar melalui aksi nyata.',
-                ),
+                        const _MissionItem(
+                          icon: Icons.volunteer_activism_outlined,
+                          iconBg: Color(0xFFE6E3F8),
+                          iconColor: navy,
+                          title: 'Kesaksian Publik',
+                          description:
+                          'Menjadi garam dan terang bagi lingkungan sekitar melalui aksi nyata.',
+                        ),
 
-                const SizedBox(height: 36),
+                        const SizedBox(height: 36),
 
-                const _SectionTitle(
-                  title: 'Pengakuan Iman',
-                  icon: Icons.verified_rounded,
-                ),
+                        const _SectionTitle(
+                          title: 'Pengakuan Iman',
+                          icon: Icons.verified_rounded,
+                        ),
 
-                const SizedBox(height: 20),
+                        const SizedBox(height: 20),
 
-                const _FaithStatementCard(),
+                        const _FaithStatementCard(),
 
-                const SizedBox(height: 40),
+                        const SizedBox(height: 40),
 
-                const Center(
-                  child: Text(
-                    'Struktur Pelayanan',
-                    style: TextStyle(
-                      color: navy,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w900,
+                        const Center(
+                          child: Text(
+                            'Struktur Pelayanan',
+                            style: TextStyle(
+                              color: navy,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 26),
+
+                        const _OrganizationChart(),
+                      ],
                     ),
                   ),
                 ),
-
-                const SizedBox(height: 26),
-
-                const _OrganizationChart(),
-              ],
-            ),
+              );
+            },
           ),
 
           const Positioned(
             left: 0,
             right: 0,
             bottom: 0,
-            child: _BottomNavigation(),
+            child: AppBottomNavigation(currentIndex: -1),
           ),
         ],
       ),
@@ -782,86 +797,6 @@ class _TeamChip extends StatelessWidget {
           fontSize: 11,
           fontWeight: FontWeight.w800,
         ),
-      ),
-    );
-  }
-}
-
-class _BottomNavigation extends StatelessWidget {
-  const _BottomNavigation();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 104,
-      padding: const EdgeInsets.fromLTRB(32, 16, 32, 18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(22),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.07),
-            blurRadius: 24,
-            offset: const Offset(0, -8),
-          ),
-        ],
-      ),
-      child: const Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _BottomNavItem(
-            icon: Icons.home_outlined,
-            label: 'HOME',
-          ),
-          _BottomNavItem(
-            icon: Icons.menu_book_outlined,
-            label: 'ALKITAB',
-          ),
-          _BottomNavItem(
-            icon: Icons.person_outline_rounded,
-            label: 'PROFIL',
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BottomNavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-
-  const _BottomNavItem({
-    required this.icon,
-    required this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 84,
-      height: 56,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            color: const Color(0xFF95A0B6),
-            size: 24,
-          ),
-          const SizedBox(height: 5),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Color(0xFF95A0B6),
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1,
-            ),
-          ),
-        ],
       ),
     );
   }
