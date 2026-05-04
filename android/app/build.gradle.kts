@@ -28,6 +28,13 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        ndk {
+            // Keep debug builds aligned with the connected Android device ABI.
+            // This avoids AGP trying to strip Flutter engine binaries for ABIs
+            // that are not present in the current build output.
+            abiFilters += listOf("arm64-v8a")
+        }
     }
 
     buildTypes {
