@@ -53,12 +53,10 @@ class _MemberPengumumanScreenState extends State<MemberPengumumanScreen> {
       errorMsg = '';
     });
     try {
-      debugPrint("🚀 [API DEBUG] Memanggil: ${ApiConstants.baseUrl}${ApiConstants.announcements}");
+      final fullUrl = "${ApiConstants.baseUrl}${ApiConstants.announcements}";
+      debugPrint("🚀 [API CALL] Mengambil Pengumuman: $fullUrl");
 
       final response = await ApiClient().get(ApiConstants.announcements);
-
-      // Log respon lengkap untuk pengecekan di console
-      debugPrint("📦 [API RESPONSE]: $response");
 
       final List<dynamic> res = response is List ? response : (response['data'] ?? []);
 
@@ -72,9 +70,11 @@ class _MemberPengumumanScreenState extends State<MemberPengumumanScreen> {
       debugPrint("❌ [API ERROR]: $e");
       if (mounted) {
         setState(() {
-          errorMsg = e.toString().contains('404')
-              ? "Endpoint tidak ditemukan (404). Periksa rute API di backend."
-              : e.toString();
+          if (e.toString().contains('404')) {
+            errorMsg = "Gagal memuat: Endpoint '${ApiConstants.announcements}' tidak ditemukan di server (404).\n\nPastikan rute di backend sudah benar.";
+          } else {
+            errorMsg = e.toString();
+          }
           loading = false;
         });
       }
@@ -83,10 +83,9 @@ class _MemberPengumumanScreenState extends State<MemberPengumumanScreen> {
 
   List<PengumumanItem> get filteredData {
     return pengumumanData.where((item) {
-      // Logic Filter Kategori
       bool matchCategory = true;
       if (category != "Semua Pengumuman") {
-        String targetScope = category.toLowerCase().split(' ').last; // jemaat, publik, rayon
+        String targetScope = category.toLowerCase().split(' ').last;
         matchCategory = item.category.toLowerCase().contains(targetScope);
       }
 
@@ -173,17 +172,25 @@ class _MemberPengumumanScreenState extends State<MemberPengumumanScreen> {
   Widget _buildErrorState() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.only(top: 60),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 60),
         child: Column(
           children: [
-            const Icon(Icons.error_outline_rounded, color: Colors.red, size: 48),
+            const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 64),
             const SizedBox(height: 16),
-            Text(errorMsg, textAlign: TextAlign.center, style: const TextStyle(color: Colors.red)),
-            const SizedBox(height: 16),
+            Text(
+              errorMsg,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w500)
+            ),
+            const SizedBox(height: 24),
             ElevatedButton(
               onPressed: fetchPengumuman,
-              style: ElevatedButton.styleFrom(backgroundColor: navy),
-              child: const Text("Coba Lagi", style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: navy,
+                minimumSize: const Size(160, 45),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
+              ),
+              child: const Text("Coba Lagi", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ],
         ),

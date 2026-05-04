@@ -45,18 +45,14 @@ class MemberDrawer extends StatelessWidget {
   }
 
   Future<void> _logout(BuildContext context) async {
-    // Gunakan AuthProvider agar state terupdate secara global
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-    // Tutup drawer terlebih dahulu
     Navigator.pop(context);
 
-    // Proses logout (menghapus token & reset user)
     await authProvider.logout();
 
     if (!context.mounted) return;
 
-    // Redirect ke Home Screen Publik (bukan Login Screen)
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
@@ -96,55 +92,62 @@ class MemberDrawer extends StatelessWidget {
                 thickness: 1,
               ),
               const SizedBox(height: 28),
-              _MemberDrawerItem(
-                icon: Icons.home_rounded,
-                title: 'Beranda',
-                isActive: activeMenu == MemberDrawerMenu.beranda,
-                onTap: () {
-                  _goToPage(
-                    context,
-                    MemberDrawerMenu.beranda,
-                    const MemberHomeScreen(),
-                  );
-                },
+              Expanded(
+                child: ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    _MemberDrawerItem(
+                      icon: Icons.home_rounded,
+                      title: 'Beranda',
+                      isActive: activeMenu == MemberDrawerMenu.beranda,
+                      onTap: () {
+                        _goToPage(
+                          context,
+                          MemberDrawerMenu.beranda,
+                          const MemberHomeScreen(),
+                        );
+                      },
+                    ),
+                    _MemberDrawerItem(
+                      icon: Icons.calendar_month_outlined,
+                      title: 'Jadwal Ibadah Rayon',
+                      isActive: activeMenu == MemberDrawerMenu.jadwalRayon,
+                      onTap: () {
+                        _goToPage(
+                          context,
+                          MemberDrawerMenu.jadwalRayon,
+                          const JadwalRayonScreen(),
+                        );
+                      },
+                    ),
+                    _MemberDrawerItem(
+                      icon: Icons.groups_rounded,
+                      title: 'Request Surat',
+                      isActive: activeMenu == MemberDrawerMenu.requestSurat,
+                      onTap: () {
+                        _goToPage(
+                          context,
+                          MemberDrawerMenu.requestSurat,
+                          const RequestSuratScreen(),
+                        );
+                      },
+                    ),
+                    _MemberDrawerItem(
+                      icon: Icons.campaign_outlined,
+                      title: 'Pengumuman',
+                      isActive: activeMenu == MemberDrawerMenu.pengumuman,
+                      onTap: () {
+                        _goToPage(
+                          context,
+                          MemberDrawerMenu.pengumuman,
+                          const MemberPengumumanScreen(),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
-              _MemberDrawerItem(
-                icon: Icons.calendar_month_outlined,
-                title: 'Jadwal Ibadah Rayon',
-                isActive: activeMenu == MemberDrawerMenu.jadwalRayon,
-                onTap: () {
-                  _goToPage(
-                    context,
-                    MemberDrawerMenu.jadwalRayon,
-                    const JadwalRayonScreen(),
-                  );
-                },
-              ),
-              _MemberDrawerItem(
-                icon: Icons.groups_rounded,
-                title: 'Request Surat',
-                isActive: activeMenu == MemberDrawerMenu.requestSurat,
-                onTap: () {
-                  _goToPage(
-                    context,
-                    MemberDrawerMenu.requestSurat,
-                    const RequestSuratScreen(),
-                  );
-                },
-              ),
-              _MemberDrawerItem(
-                icon: Icons.campaign_outlined,
-                title: 'Pengumuman',
-                isActive: activeMenu == MemberDrawerMenu.pengumuman,
-                onTap: () {
-                  _goToPage(
-                    context,
-                    MemberDrawerMenu.pengumuman,
-                    const MemberPengumumanScreen(),
-                  );
-                },
-              ),
-              const Spacer(),
+              const SizedBox(height: 20),
               _LogoutButton(
                 onTap: () {
                   _logout(context);

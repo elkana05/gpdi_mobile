@@ -5,6 +5,7 @@ import 'profil_gereja_screen.dart';
 import 'pelayanan_gereja_screen.dart';
 import 'galeri_screen.dart';
 import 'pengumuman_screen.dart';
+import 'public_kontak.dart';
 import '../../auth/ui/login_screen.dart';
 
 
@@ -15,6 +16,7 @@ enum DrawerMenu {
   pelayanan,
   galeri,
   pengumuman,
+  kontak,
   none,
 }
 
@@ -135,7 +137,8 @@ class PublicDrawer extends StatelessWidget {
               const SizedBox(height: 20),
 
               Expanded(
-                child: Column(
+                child: ListView(
+                  padding: EdgeInsets.zero,
                   children: [
                     _DrawerMenuItem(
                       icon: Icons.home_rounded,
@@ -197,13 +200,21 @@ class PublicDrawer extends StatelessWidget {
                         const PengumumanScreen(),
                       ),
                     ),
-
-                    const Spacer(),
-
-                    const _LoginButton(),
+                    _DrawerMenuItem(
+                      icon: Icons.location_on_outlined,
+                      title: 'Kontak & Lokasi',
+                      isActive: activeMenu == DrawerMenu.kontak,
+                      onTap: () => _goToPage(
+                        context,
+                        DrawerMenu.kontak,
+                        const PublicKontakScreen(),
+                      ),
+                    ),
                   ],
                 ),
               ),
+              const SizedBox(height: 20),
+              const _LoginButton(),
             ],
           ),
         ),

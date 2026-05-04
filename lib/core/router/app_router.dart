@@ -7,6 +7,7 @@ import '../../features/jemaatpublik/ui/jadwal_ibadah_screen.dart';
 import '../../features/jemaatpublik/ui/pengumuman_screen.dart';
 import '../../features/jemaatpublik/ui/pelayanan_gereja_screen.dart';
 import '../../features/jemaatpublik/ui/profil_gereja_screen.dart';
+import '../../features/jemaatpublik/ui/public_kontak.dart';
 import '../../features/jemaataktif/ui/member_home_screen.dart';
 import '../../features/jemaataktif/ui/member_profile_screen.dart';
 import '../../features/jemaataktif/ui/jadwal_rayon_screen.dart';
@@ -45,6 +46,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/profil-gereja',
       builder: (context, state) => const ProfilGerejaScreen(),
+    ),
+    GoRoute(
+      path: '/kontak',
+      builder: (context, state) => const PublicKontakScreen(),
     ),
     GoRoute(
       path: '/profile-guest',

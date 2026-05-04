@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 
 class ApiConstants {
   static String get host {
-    if (kIsWeb) {
+    if (kIsWeb) { 
       return 'http://127.0.0.1:8000';
     }
 
@@ -16,38 +16,54 @@ class ApiConstants {
 
   static String get baseUrl => '$host/api/';
 
-  // =========================
-  // AUTH / USER
-  // =========================
+  // =========================================================
+  // 1. USER & AUTH SERVICE (Gateway: /auth/ atau /user/)
+  // =========================================================
   static const String login = 'auth/login';
-  static const String register = 'auth/register';
   static const String logout = 'auth/logout';
-  static const String userProfile = 'user/profile';
-  static const String updateProfile = 'user/profile/update';
-  static const String familyMembers = 'user/family-members';
-  static const String allUsers = 'users';
+  static const String userMe = 'auth/me';
 
-  // =========================
-  // EVENT / JADWAL
-  // =========================
+  // Profil & Keamanan Akun
+  static const String userProfile = 'user/profile';
+  static const String updateProfile = 'user/profile';
+  static const String updatePassword = 'user/password';
+
+  // Anggota Keluarga
+  static const String familyMembers = 'user/family-members';
+
+  // Manajemen Jemaat & User (Admin)
+  static const String jemaatList = 'user/jemaat';
+  static const String allUsers = 'user/admin/users';
+
+  // =========================================================
+  // 2. EVENT & RAYON SERVICE (Gateway: /event/)
+  // =========================================================
   static const String worshipSchedules = 'event/worship';
   static const String activitySchedules = 'event/activity';
-  static const String rayonSchedules = 'event/rayon-schedule'; // Untuk manajemen (Admin/Pendeta)
-  static const String rayons = 'event/rayon'; // Master data Rayon
-  static const String rayonSchedule = 'event/rayon/my-schedule'; // Untuk Jemaat
 
-  // =========================
-  // CONTENT / PENGUMUMAN / GALERI
-  // =========================
+  // Rute Jemaat melihat jadwal rayon
+  static const String rayonSchedule = 'event/jemaat/rayon-schedules';
+
+  // Rute Admin/Manajemen
+  static const String rayons = 'event/admin/rayon';
+  static const String rayonSchedules = 'event/admin/rayon-schedule';
+
+  // =========================================================
+  // 3. CONTENT & PUBLICATION SERVICE (Gateway: /content/)
+  // =========================================================
   static const String gallery = 'content/galeri';
   static const String devotionals = 'content/devotionals';
-  static const String announcements = 'content/pengumuman';
-  static const String services = 'content/pelayanan';
-  static const String churchProfile = 'content/profil-gereja';
+
+  // Rute Pengumuman
+  static const String announcements = 'content/admin/pengumuman';
   static const String adminAnnouncements = 'content/admin/pengumuman';
 
-  // =========================
-  // PERSURATAN
-  // =========================
-  static const String requestSurat = 'surat/request';
+  static const String services = 'content/pelayanan';
+  static const String churchProfile = 'content/profil-gereja';
+
+  // =========================================================
+  // 4. ADMINISTRATION & UTILITY SERVICE (Gateway: /admin/)
+  // =========================================================
+  static const String requestSurat = 'admin/surat';
+  static const String notifications = 'admin/notifikasi';
 }

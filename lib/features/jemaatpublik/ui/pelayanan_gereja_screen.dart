@@ -27,7 +27,7 @@ class _PelayananGerejaScreenState extends State<PelayananGerejaScreen> {
       'nama': 'Sekolah Minggu',
       'deskripsiSingkat': 'Membina iman anak-anak melalui cerita Alkitab.',
       'deskripsiLengkap': 'Pelayanan kategorial yang berfokus pada pertumbuhan rohani anak-anak sejak usia dini dengan metode pengajaran yang kreatif, interaktif, dan sangat menyenangkan.',
-      'gambar': 'https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=1000',
+      'gambar': 'https://images.unsplash.com/photo-1503945438517-f65904a52ce6?q=80&w=1000',
       'jadwal': 'Setiap Minggu, 08:00 WIB',
       'penanggungJawab': 'Pdt. Maria Sulastri',
       'syarat': ['Memiliki hati untuk anak-anak', 'Sabar dan kreatif', 'Sudah dibaptis air / Jemaat Aktif'],
@@ -37,7 +37,7 @@ class _PelayananGerejaScreenState extends State<PelayananGerejaScreen> {
       'nama': 'Pemuda & Remaja',
       'deskripsiSingkat': 'Wadah pertumbuhan rohani bagi generasi muda.',
       'deskripsiLengkap': 'Komunitas bagi kaum muda untuk bertumbuh bersama dalam iman, kepemimpinan, dan talenta. Kami fokus membangun generasi yang takut akan Tuhan.',
-      'gambar': 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?q=80&w=1000',
+      'gambar': 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?q=80&w=1000',
       'jadwal': 'Setiap Sabtu, 17:00 WIB',
       'penanggungJawab': 'Ev. Yohanes Pratama',
       'syarat': ['Usia 15 - 30 tahun', 'Bersemangat dalam komunitas', 'Aktif dalam kegiatan gereja'],
@@ -47,7 +47,7 @@ class _PelayananGerejaScreenState extends State<PelayananGerejaScreen> {
       'nama': 'Musik & Pujian',
       'deskripsiSingkat': 'Melayani Tuhan melalui talenta bermusik.',
       'deskripsiLengkap': 'Tim yang bertugas memimpin jemaat masuk dalam hadirat Tuhan melalui nyanyian pujian dan penyembahan yang diurapi setiap ibadah raya.',
-      'gambar': 'https://images.unsplash.com/photo-1514525253361-b83f85dffa2b?q=80&w=1000',
+      'gambar': 'https://images.unsplash.com/photo-1510915361894-db8b60106cb1?q=80&w=1000',
       'jadwal': 'Latihan: Setiap Kamis, 19:00 WIB',
       'penanggungJawab': 'Bpk. David Simanjuntak',
       'syarat': ['Mampu bernyanyi/bermain alat musik', 'Setia dalam latihan rutin', 'Lulus audisi internal'],
@@ -57,7 +57,7 @@ class _PelayananGerejaScreenState extends State<PelayananGerejaScreen> {
       'nama': 'Multimedia',
       'deskripsiSingkat': 'Pengelolaan visual dan siaran digital.',
       'deskripsiLengkap': 'Mendukung pemberitaan Injil melalui teknologi visual, audio, dan dokumentasi digital untuk menjangkau jiwa-jiwa di platform digital.',
-      'gambar': 'https://images.unsplash.com/photo-1516280440614-37939bb9edcc?q=80&w=1000',
+      'gambar': 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=1000',
       'jadwal': 'Setiap Ibadah Raya',
       'penanggungJawab': 'Sdr. Kevin Wijaya',
       'syarat': ['Menguasai alat kamera/OBS/Desain', 'Cekatan dan teliti', 'Mau belajar hal baru'],
@@ -73,8 +73,6 @@ class _PelayananGerejaScreenState extends State<PelayananGerejaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-
     return Scaffold(
       drawer: const PublicDrawer(activeMenu: DrawerMenu.pelayanan),
       backgroundColor: softBg,
@@ -133,9 +131,16 @@ class _PelayananGerejaScreenState extends State<PelayananGerejaScreen> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(24),
                           boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10))],
-                          image: const DecorationImage(
-                            image: NetworkImage('https://images.unsplash.com/photo-1515162305285-0293e4767cc2?q=80&w=1000'),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(24),
+                          child: Image.network(
+                            'https://images.unsplash.com/photo-1515162305285-0293e4767cc2?q=80&w=1000',
                             fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Container(
+                              color: Colors.grey[300],
+                              child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                            ),
                           ),
                         ),
                       ),
@@ -192,7 +197,18 @@ class _PelayananGerejaScreenState extends State<PelayananGerejaScreen> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.network(item['gambar'], height: 70, width: 70, fit: BoxFit.cover),
+            child: Image.network(
+              item['gambar'],
+              height: 70,
+              width: 70,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                height: 70,
+                width: 70,
+                color: Colors.grey[200],
+                child: const Icon(Icons.image_not_supported, color: Colors.grey),
+              ),
+            ),
           ),
           const SizedBox(height: 16),
           Text(item['nama'], style: GoogleFonts.montserrat(fontWeight: FontWeight.w900, color: navy, fontSize: 18)),
@@ -244,7 +260,18 @@ class _PelayananGerejaScreenState extends State<PelayananGerejaScreen> {
           const Divider(height: 32),
           ClipRRect(
             borderRadius: BorderRadius.circular(16),
-            child: Image.network(selectedItem!['gambar'], height: 200, width: double.infinity, fit: BoxFit.cover),
+            child: Image.network(
+              selectedItem!['gambar'],
+              height: 200,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                height: 200,
+                width: double.infinity,
+                color: Colors.grey[200],
+                child: const Center(child: Icon(Icons.broken_image, size: 50, color: Colors.grey)),
+              ),
+            ),
           ),
           const SizedBox(height: 24),
           Text(selectedItem!['nama'], style: GoogleFonts.montserrat(fontSize: 26, fontWeight: FontWeight.w900, color: red)),
