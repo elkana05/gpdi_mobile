@@ -40,12 +40,7 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
     _fetchRayon();
   }
 
-<<<<<<< Updated upstream
   // Normalisasi role agar sesuai dengan dropdown UI (admin/pendeta dipetakan ke 'pendeta')
-=======
-  // Fungsi pembantu untuk memastikan role selalu valid bagi Dropdown
-  // Mengonversi 'admin' dari database menjadi 'pendeta' agar sesuai dengan UI
->>>>>>> Stashed changes
   String _normalizeRole(String? role) {
     if (role == 'admin' || role == 'pendeta') return 'pendeta';
     if (role == 'ketua_rayon') return 'ketua_rayon';
@@ -130,11 +125,7 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
         'name': item['name'] ?? '',
         'email': item['email'] ?? '',
         'password': '',
-<<<<<<< Updated upstream
         'role': _normalizeRole(item['role']),
-=======
-        'role': _normalizeRole(item['role']), // Normalisasi saat load data edit
->>>>>>> Stashed changes
         'id_rayon': item['id_rayon']?.toString() ?? ''
       };
       _errorMsg = '';
@@ -289,11 +280,7 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
   }
 
   Widget _buildJemaatCard(dynamic item) {
-<<<<<<< Updated upstream
     String role = _normalizeRole(item['role']);
-=======
-    String role = _normalizeRole(item['role']); // Normalisasi role di kartu jemaat agar tidak crash
->>>>>>> Stashed changes
     Color roleColor = role == 'pendeta' ? Colors.purple : (role == 'ketua_rayon' ? Colors.green : Colors.blue);
 
     return Container(
@@ -361,15 +348,9 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
                       underline: const SizedBox(),
                       onChanged: (v) => _handleRoleChangeInline(item, v!),
                       items: const [
-<<<<<<< Updated upstream
                         DropdownMenuItem(value: 'jemaat', child: Text('Jemaat', style: TextStyle(fontSize: 12, color: Colors.blue))),
                         DropdownMenuItem(value: 'ketua_rayon', child: Text('Ketua Rayon', style: TextStyle(fontSize: 12, color: Colors.green))),
                         DropdownMenuItem(value: 'pendeta', child: Text('Pendeta', style: TextStyle(fontSize: 12, color: Colors.purple))),
-=======
-                        DropdownMenuItem(value: 'jemaat', child: Text('Jemaat', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blue))),
-                        DropdownMenuItem(value: 'ketua_rayon', child: Text('Ketua Rayon', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green))),
-                        DropdownMenuItem(value: 'pendeta', child: Text('Pendeta', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.purple))),
->>>>>>> Stashed changes
                       ],
                     ),
                   ],
@@ -484,25 +465,11 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
               onPressed: _isSubmitting
                   ? null
                   : () async {
-<<<<<<< Updated upstream
                       setModalState(() => _isSubmitting = true);
                       await _handleSubmitForm();
                       if (mounted) setModalState(() => _isSubmitting = false);
                     },
               style: ElevatedButton.styleFrom(backgroundColor: navy, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-=======
-                      // Trigger loading state in dialog
-                      setModalState(() => _isSubmitting = true);
-                      await _handleSubmitForm();
-                      if (mounted) {
-                        setModalState(() => _isSubmitting = false);
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: navy,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
->>>>>>> Stashed changes
               child: _isSubmitting
                   ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                   : const Text('Simpan', style: TextStyle(color: Colors.white)),
