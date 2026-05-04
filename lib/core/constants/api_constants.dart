@@ -16,7 +16,7 @@ class ApiConstants {
 
   static String get baseUrl => '$host/api/';
 
-  
+
   // =========================================================
   // 1. USER & AUTH SERVICE (Gateway: /auth/ atau /user/)
   // =========================================================
