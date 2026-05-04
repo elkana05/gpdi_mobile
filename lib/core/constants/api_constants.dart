@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 
 class ApiConstants {
   static String get host {
-    if (kIsWeb) { 
+    if (kIsWeb) {
       return 'http://127.0.0.1:8000';
     }
 
@@ -16,6 +16,7 @@ class ApiConstants {
 
   static String get baseUrl => '$host/api/';
 
+  
   // =========================================================
   // 1. USER & AUTH SERVICE (Gateway: /auth/ atau /user/)
   // =========================================================
