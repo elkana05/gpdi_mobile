@@ -40,6 +40,13 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
     _fetchRayon();
   }
 
+  // Normalisasi role agar sesuai dengan dropdown UI (admin/pendeta dipetakan ke 'pendeta')
+  String _normalizeRole(String? role) {
+    if (role == 'admin' || role == 'pendeta') return 'pendeta';
+    if (role == 'ketua_rayon') return 'ketua_rayon';
+    return 'jemaat';
+  }
+
   Future<void> _fetchData() async {
     setState(() {
       _isLoading = true;
@@ -118,7 +125,7 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
         'name': item['name'] ?? '',
         'email': item['email'] ?? '',
         'password': '',
-        'role': item['role'] ?? 'jemaat',
+        'role': _normalizeRole(item['role']),
         'id_rayon': item['id_rayon']?.toString() ?? ''
       };
       _errorMsg = '';
@@ -130,7 +137,6 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
     if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
 
-    // Validasi Rayon sesuai logic React
     if ((_formData['role'] == 'jemaat' || _formData['role'] == 'ketua_rayon') && (_formData['id_rayon'] == null || _formData['id_rayon'].isEmpty)) {
       setState(() => _errorMsg = "Silakan pilih Rayon untuk pengguna ini!");
       return;
@@ -220,40 +226,36 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Column(
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
-                        ),
-                        child: TextField(
-                          onChanged: (v) => setState(() => _searchTerm = v),
-                          decoration: const InputDecoration(
-                            hintText: 'Cari nama atau email...',
-                            border: InputBorder.none,
-                            icon: Icon(Icons.search, color: slate, size: 20),
-                          ),
-                        ),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: TextField(
+                      onChanged: (v) => setState(() => _searchTerm = v),
+                      decoration: const InputDecoration(
+                        hintText: 'Cari nama atau email...',
+                        border: InputBorder.none,
+                        icon: Icon(Icons.search, color: slate, size: 20),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    ElevatedButton(
-                      onPressed: _handleOpenAddModal,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue[600],
-                        padding: const EdgeInsets.all(12),
-                        minimumSize: Size.zero,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: const Icon(Icons.add, color: Colors.white),
-                    ),
-                  ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton(
+                  onPressed: _handleOpenAddModal,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue[600],
+                    padding: const EdgeInsets.all(12),
+                    minimumSize: Size.zero,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Icon(Icons.add, color: Colors.white),
                 ),
               ],
             ),
@@ -278,7 +280,7 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
   }
 
   Widget _buildJemaatCard(dynamic item) {
-    String role = item['role'] ?? 'jemaat';
+    String role = _normalizeRole(item['role']);
     Color roleColor = role == 'pendeta' ? Colors.purple : (role == 'ketua_rayon' ? Colors.green : Colors.blue);
 
     return Container(
@@ -287,13 +289,7 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFF1F5F9)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -315,19 +311,14 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
                     ],
                   ),
                 ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit_outlined, color: Colors.amber, size: 20),
-                      onPressed: () => _handleOpenEditModal(item),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
-                      onPressed: () => _handleDelete(item),
-                    ),
-                  ],
-                )
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined, color: Colors.amber, size: 20),
+                  onPressed: () => _handleOpenEditModal(item),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                  onPressed: () => _handleDelete(item),
+                ),
               ],
             ),
             const Divider(height: 24),
@@ -356,10 +347,10 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
                       isDense: true,
                       underline: const SizedBox(),
                       onChanged: (v) => _handleRoleChangeInline(item, v!),
-                      items: [
-                        DropdownMenuItem(value: 'jemaat', child: Text('Jemaat', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blue))),
-                        DropdownMenuItem(value: 'ketua_rayon', child: Text('Ketua Rayon', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green))),
-                        DropdownMenuItem(value: 'pendeta', child: Text('Pendeta', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.purple))),
+                      items: const [
+                        DropdownMenuItem(value: 'jemaat', child: Text('Jemaat', style: TextStyle(fontSize: 12, color: Colors.blue))),
+                        DropdownMenuItem(value: 'ketua_rayon', child: Text('Ketua Rayon', style: TextStyle(fontSize: 12, color: Colors.green))),
+                        DropdownMenuItem(value: 'pendeta', child: Text('Pendeta', style: TextStyle(fontSize: 12, color: Colors.purple))),
                       ],
                     ),
                   ],
@@ -386,66 +377,102 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (_errorMsg.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(color: Colors.red[50], borderRadius: BorderRadius.circular(8)),
-                      child: Text(_errorMsg, style: const TextStyle(color: Colors.red, fontSize: 12)),
-                    ),
                   TextFormField(
                     initialValue: _formData['name'],
-                    decoration: const InputDecoration(labelText: 'Nama Lengkap'),
-                    validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
+                    decoration: InputDecoration(
+                      labelText: 'Nama Lengkap',
+                      prefixIcon: const Icon(Icons.person_outline, color: navy),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    validator: (v) => (v == null || v.isEmpty) ? 'Nama wajib diisi' : null,
                     onSaved: (v) => _formData['name'] = v,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   TextFormField(
                     initialValue: _formData['email'],
-                    decoration: const InputDecoration(labelText: 'Alamat Email'),
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
+                    decoration: InputDecoration(
+                      labelText: 'Email',
+                      prefixIcon: const Icon(Icons.email_outlined, color: navy),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    validator: (v) => (v == null || v.isEmpty) ? 'Email wajib diisi' : null,
                     onSaved: (v) => _formData['email'] = v,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   TextFormField(
-                    decoration: InputDecoration(
-                      labelText: 'Kata Sandi',
-                      hintText: _editId == null ? 'Minimal 6 karakter' : 'Kosongkan jika tidak diubah',
-                    ),
                     obscureText: true,
-                    validator: (v) => (_editId == null && v!.length < 6) ? 'Minimal 6 karakter' : null,
+                    decoration: InputDecoration(
+                      labelText: _editId == null ? 'Password' : 'Password (Kosongkan jika tidak diubah)',
+                      prefixIcon: const Icon(Icons.lock_outline, color: navy),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    validator: (v) => (_editId == null && (v == null || v.isEmpty)) ? 'Password wajib diisi' : null,
                     onSaved: (v) => _formData['password'] = v,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
                     value: _formData['role'],
-                    decoration: const InputDecoration(labelText: 'Peran Akses'),
+                    decoration: InputDecoration(
+                      labelText: 'Hak Akses',
+                      prefixIcon: const Icon(Icons.security, color: navy),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
                     items: const [
-                      DropdownMenuItem(value: 'jemaat', child: Text('Jemaat Biasa')),
+                      DropdownMenuItem(value: 'jemaat', child: Text('Jemaat')),
                       DropdownMenuItem(value: 'ketua_rayon', child: Text('Ketua Rayon')),
-                      DropdownMenuItem(value: 'pendeta', child: Text('Pendeta / Admin')),
+                      DropdownMenuItem(value: 'pendeta', child: Text('Pendeta')),
                     ],
-                    onChanged: (v) => setModalState(() => _formData['role'] = v),
+                    onChanged: (v) {
+                      setModalState(() {
+                        _formData['role'] = v;
+                        if (v == 'pendeta') _formData['id_rayon'] = '';
+                      });
+                    },
                   ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    value: _rayonList.any((r) => r['id'].toString() == _formData['id_rayon']) ? _formData['id_rayon'] : null,
-                    decoration: const InputDecoration(labelText: 'Plotting Rayon'),
-                    disabledHint: const Text('Pendeta tidak terikat rayon'),
-                    items: _rayonList.map((r) => DropdownMenuItem(value: r['id'].toString(), child: Text(r['nama_rayon']))).toList(),
-                    onChanged: _formData['role'] == 'pendeta' ? null : (v) => setModalState(() => _formData['id_rayon'] = v),
-                  ),
+                  if (_formData['role'] != 'pendeta') ...[
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: _formData['id_rayon'].toString().isEmpty ? null : _formData['id_rayon'].toString(),
+                      decoration: InputDecoration(
+                        labelText: 'Rayon',
+                        prefixIcon: const Icon(Icons.map_outlined, color: navy),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      items: _rayonList.map((r) {
+                        return DropdownMenuItem<String>(
+                          value: r['id'].toString(),
+                          child: Text(r['nama_rayon'] ?? '-'),
+                        );
+                      }).toList(),
+                      onChanged: (v) => setModalState(() => _formData['id_rayon'] = v),
+                      validator: (v) => (v == null || v.isEmpty) ? 'Pilih rayon' : null,
+                    ),
+                  ],
+                  if (_errorMsg.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Text(_errorMsg, style: const TextStyle(color: Colors.red, fontSize: 12), textAlign: TextAlign.center),
+                  ],
                 ],
               ),
             ),
           ),
           actions: [
-            TextButton(onPressed: _isSubmitting ? null : () => Navigator.pop(context), child: const Text('Batal')),
+            TextButton(
+              onPressed: _isSubmitting ? null : () => Navigator.pop(context),
+              child: const Text('Batal', style: TextStyle(color: slate)),
+            ),
             ElevatedButton(
-              onPressed: _isSubmitting ? null : _handleSubmitForm,
-              style: ElevatedButton.styleFrom(backgroundColor: navy),
-              child: Text(_isSubmitting ? 'Menyimpan...' : 'Simpan Akun'),
+              onPressed: _isSubmitting
+                  ? null
+                  : () async {
+                      setModalState(() => _isSubmitting = true);
+                      await _handleSubmitForm();
+                      if (mounted) setModalState(() => _isSubmitting = false);
+                    },
+              style: ElevatedButton.styleFrom(backgroundColor: navy, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+              child: _isSubmitting
+                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : const Text('Simpan', style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
