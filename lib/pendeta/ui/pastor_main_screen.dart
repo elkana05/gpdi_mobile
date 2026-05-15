@@ -15,23 +15,31 @@ class PastorMainScreen extends StatefulWidget {
 class _PastorMainScreenState extends State<PastorMainScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = [
-    const PastorDashboardScreen(),
-    const PastorJemaatScreen(),
-    const PastorKontenScreen(),
-    const PastorAgendaScreen(),
-  ];
+  // Melacak halaman mana saja yang sudah pernah dibuka
+  final List<bool> _pageInitialized = [true, false, false, false];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_currentIndex],
+      // IndexedStack menjaga state halaman agar tidak hilang/load ulang saat pindah tab
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          const PastorDashboardScreen(),
+          _pageInitialized[1] ? const PastorJemaatScreen() : const SizedBox.shrink(),
+          _pageInitialized[2] ? const PastorKontenScreen() : const SizedBox.shrink(),
+          _pageInitialized[3] ? const PastorAgendaScreen() : const SizedBox.shrink(),
+        ],
+      ),
       bottomNavigationBar: PastorBottomNavigation(
         currentIndex: _currentIndex,
         onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
+          if (_currentIndex != index) {
+            setState(() {
+              _currentIndex = index;
+              _pageInitialized[index] = true; // Tandai halaman sudah dibuka
+            });
+          }
         },
       ),
     );

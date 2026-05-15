@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../core/network/api_client.dart';
-import '../../../core/constants/api_constants.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../providers/content_provider.dart';
+import '../models/content_model.dart';
 import 'public_drawer.dart';
 import 'app_bottom_navigation.dart';
 
@@ -12,60 +14,35 @@ class PengumumanScreen extends StatefulWidget {
 }
 
 class _PengumumanScreenState extends State<PengumumanScreen> {
+  // Mobile consistency colors
   static const Color navy = Color(0xFF05066F);
-  static const Color gold = Color(0xFFC5A327);
-  static const Color softBg = Color(0xFFF8F4FC);
-
-  bool isLoading = true;
-  String errorMsg = '';
-  List<dynamic> announcements = [];
+  static const Color redAccent = Color(0xFFD71313);
+  static const Color softBg = Color(0xFFF7F4FB);
+  static const Color textDark = Color(0xFF1E1E2F);
+  static const Color textGrey = Color(0xFF85879A);
 
   @override
   void initState() {
     super.initState();
-    _fetchAnnouncements();
+    Future.microtask(() =>
+        Provider.of<ContentProvider>(context, listen: false).fetchAnnouncements());
   }
 
-  Future<void> _fetchAnnouncements() async {
-    if (!mounted) return;
-    setState(() {
-      isLoading = true;
-      errorMsg = '';
-    });
-
+  String _formatTanggal(String dateString) {
     try {
-      debugPrint("🚀 [PUBLIC API] Fetching from: ${ApiConstants.baseUrl}${ApiConstants.announcements}");
-      final response = await ApiClient().get(ApiConstants.announcements);
-
-      // Log response untuk debugging di console
-      debugPrint("📦 [PUBLIC API RESPONSE]: $response");
-
-      // Handle response jika berupa Map { data: [...] } atau List [...]
-      final List<dynamic> rawData = response is List ? response : (response['data'] ?? []);
-
-      if (mounted) {
-        setState(() {
-          // Filter untuk publik: Tampilkan yang scope-nya 'publik'
-          // atau jika field scope tidak ada (default publik)
-          announcements = rawData.where((item) {
-            final String scope = (item['scope'] ?? item['category'] ?? 'publik').toString().toLowerCase();
-            return scope == 'publik' || scope == 'umum' || scope == 'info';
-          }).toList().reversed.toList();
-
-          isLoading = false;
-        });
-      }
+      final date = DateTime.parse(dateString);
+      return DateFormat('d MMMM yyyy', 'id_ID').format(date);
     } catch (e) {
-      debugPrint("❌ [PUBLIC API ERROR]: $e");
-      if (mounted) {
-        setState(() {
-          errorMsg = e.toString().contains('404')
-              ? "Layanan pengumuman tidak ditemukan di server (404)."
-              : "Gagal memuat pengumuman. Pastikan server aktif.";
-          isLoading = false;
-        });
-      }
+      return dateString;
     }
+  }
+
+  String _getBadgeLabel(String? category) {
+    final cat = category?.toLowerCase() ?? '';
+    if (cat == 'publik') return "Pengumuman Publik";
+    if (cat == 'jemaat') return "Internal Jemaat";
+    if (cat == 'rayon') return "Khusus Rayon";
+    return "Warta Jemaat";
   }
 
   @override
@@ -73,114 +50,216 @@ class _PengumumanScreenState extends State<PengumumanScreen> {
     return Scaffold(
       drawer: const PublicDrawer(activeMenu: DrawerMenu.pengumuman),
       backgroundColor: softBg,
-      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         surfaceTintColor: Colors.white,
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu_rounded, color: navy, size: 27),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
+        iconTheme: const IconThemeData(color: navy),
         title: const Text(
-          'Pengumuman Gereja',
-          style: TextStyle(color: navy, fontSize: 18, fontWeight: FontWeight.w900),
+          'Pengumuman',
+          style: TextStyle(color: navy, fontSize: 17, fontWeight: FontWeight.w700),
         ),
         centerTitle: true,
       ),
-      body: Stack(
-        children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              return RefreshIndicator(
-                onRefresh: _fetchAnnouncements,
-                color: navy,
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 130),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildSectionHeader('WARTA TERBARU', 'Publik'),
-                          const SizedBox(height: 20),
+      body: Consumer<ContentProvider>(
+        builder: (context, provider, child) {
+          return RefreshIndicator(
+            onRefresh: () => provider.fetchAnnouncements(),
+            color: navy,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                children: [
+                  // 1. HEADING (Identik React)
+                  _buildHeader(),
 
-                          if (isLoading)
-                            const Padding(
-                              padding: EdgeInsets.only(top: 100),
-                              child: Center(child: CircularProgressIndicator(color: navy)),
-                            )
-                          else if (errorMsg.isNotEmpty)
-                            _buildErrorState()
-                          else if (announcements.isEmpty)
-                            _buildEmptyState()
-                          else
-                            ...announcements.map((item) => Column(
-                              children: [
-                                _AnnouncementCard(
-                                  tag: (item['scope'] ?? item['category'] ?? 'INFO').toString().toUpperCase(),
-                                  title: item['judul'] ?? item['title'] ?? 'Tanpa Judul',
-                                  desc: item['isi'] ?? item['content'] ?? 'Tidak ada detail.',
-                                  date: _formatDate(item['created_at']),
-                                  isImportant: item['is_important'] == true || item['is_important'] == 1,
-                                ),
-                                const SizedBox(height: 16),
-                              ],
-                            )),
-                        ],
+                  // 2. BANNER (Identik React dengan Ayat/Quote)
+                  _buildBanner(),
+
+                  const SizedBox(height: 40),
+
+                  // 3. LIST PENGUMUMAN
+                  if (provider.isLoading)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 60),
+                      child: CircularProgressIndicator(color: navy),
+                    )
+                  else if (provider.announcements.isEmpty)
+                    _buildEmptyState()
+                  else
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: provider.announcements.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 20),
+                        itemBuilder: (context, index) {
+                          final item = provider.announcements[index];
+                          return _buildAnnouncementCard(item);
+                        },
                       ),
                     ),
-                  ),
-                ),
-              );
-            }
+
+                  const SizedBox(height: 60),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+      bottomNavigationBar: const AppBottomNavigation(currentIndex: -1),
+    );
+  }
+
+  Widget _buildHeader() {
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(24, 34, 24, 0),
+      child: Column(
+        children: [
+          Text(
+            'Pengumuman',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.w900,
+              color: navy,
+              letterSpacing: 1.5,
+            ),
           ),
-          const Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: AppBottomNavigation(currentIndex: -1),
+          SizedBox(height: 12),
+          Text(
+            'Warta dan Informasi Terbaru Jemaat GPdI Sibulele',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 15, color: textGrey),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title, String sub) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(title, style: const TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          decoration: BoxDecoration(color: gold.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
-          child: Text(sub, style: const TextStyle(color: gold, fontSize: 10, fontWeight: FontWeight.bold)),
+  Widget _buildBanner() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 40, 24, 0),
+      child: Container(
+        height: 220,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: navy,
+          borderRadius: BorderRadius.circular(20),
+          image: DecorationImage(
+            image: const NetworkImage(
+              "https://images.unsplash.com/photo-1455849318743-b2233052fcff?q=80&w=2069&auto=format&fit=crop",
+            ),
+            fit: BoxFit.cover,
+            colorFilter: ColorFilter.mode(navy.withOpacity(0.6), BlendMode.darken),
+          ),
         ),
-      ],
+        child: const Padding(
+          padding: EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                "\"Sebab Aku ini mengetahui rancangan-rancangan apa yang ada pada-Ku mengenai kamu, demikianlah firman TUHAN, yaitu rancangan damai sejahtera dan bukan rancangan kecelakaan, untuk memberikan kepadamu hari depan yang penuh harapan.\"",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontStyle: FontStyle.italic,
+                  height: 1.4,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              SizedBox(height: 16),
+              Text(
+                "— Yeremia 29:11",
+                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
-  Widget _buildErrorState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.only(top: 60),
-        child: Column(
-          children: [
-            const Icon(Icons.cloud_off_rounded, color: Colors.grey, size: 48),
-            const SizedBox(height: 16),
-            Text(errorMsg, style: const TextStyle(color: Colors.grey), textAlign: TextAlign.center),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _fetchAnnouncements,
-              style: ElevatedButton.styleFrom(backgroundColor: navy, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-              child: const Text("Coba Lagi", style: TextStyle(color: Colors.white)),
+  Widget _buildAnnouncementCard(AnnouncementModel item) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Card
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: redAccent.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        _getBadgeLabel(item.category),
+                        style: const TextStyle(
+                          color: redAccent,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      item.title,
+                      style: const TextStyle(
+                        color: navy,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        height: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                _formatTanggal(item.date),
+                style: const TextStyle(color: textGrey, fontSize: 11, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          const SizedBox(height: 16),
+          // Deskripsi
+          Text(
+            item.content,
+            style: const TextStyle(
+              color: Color(0xFF4B5563), // gray-700
+              fontSize: 14,
+              height: 1.6,
+              fontWeight: FontWeight.w400,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -188,100 +267,25 @@ class _PengumumanScreenState extends State<PengumumanScreen> {
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.only(top: 100),
+        padding: const EdgeInsets.symmetric(vertical: 80),
         child: Column(
           children: [
-            Icon(Icons.campaign_outlined, color: Colors.grey.withOpacity(0.5), size: 64),
-            const SizedBox(height: 16),
-            const Text("Belum ada pengumuman publik.", style: TextStyle(color: Colors.grey)),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.grey.shade200, width: 2),
+              ),
+              child: const Icon(Icons.campaign_outlined, color: Colors.grey, size: 48),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              "Belum ada pengumuman terbaru saat ini.",
+              style: TextStyle(color: textGrey, fontSize: 14, fontWeight: FontWeight.w500),
+            ),
           ],
         ),
-      ),
-    );
-  }
-
-  String _formatDate(dynamic dateStr) {
-    if (dateStr == null) return "-";
-    try {
-      final date = DateTime.parse(dateStr.toString());
-      final now = DateTime.now();
-      final diff = now.difference(date);
-
-      if (diff.inMinutes < 60) return "${diff.inMinutes}m lalu";
-      if (diff.inHours < 24) return "${diff.inHours}j lalu";
-
-      const bulan = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-      return "${date.day} ${bulan[date.month - 1]} ${date.year}";
-    } catch (_) {
-      return dateStr.toString();
-    }
-  }
-}
-
-class _AnnouncementCard extends StatelessWidget {
-  final String tag, title, desc, date;
-  final bool isImportant;
-  const _AnnouncementCard({required this.tag, required this.title, required this.desc, required this.date, this.isImportant = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isImportant ? const Color(0xFF05066F) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4))],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isImportant ? const Color(0xFFC5A327) : const Color(0xFFF1F0FF),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  tag,
-                  style: TextStyle(
-                    color: isImportant ? Colors.black : const Color(0xFF05066F),
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              Text(
-                date,
-                style: TextStyle(
-                  color: isImportant ? Colors.white70 : Colors.grey,
-                  fontSize: 11,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Text(
-            title,
-            style: TextStyle(
-              color: isImportant ? Colors.white : const Color(0xFF1E1E2F),
-              fontSize: 17,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            desc,
-            style: TextStyle(
-              color: isImportant ? Colors.white70 : const Color(0xFF7D7F91),
-              fontSize: 13,
-              height: 1.5,
-            ),
-          ),
-        ],
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../core/constants/api_constants.dart';
 import 'public_drawer.dart';
 import 'app_bottom_navigation.dart';
 
@@ -12,63 +13,67 @@ class PelayananGerejaScreen extends StatefulWidget {
 }
 
 class _PelayananGerejaScreenState extends State<PelayananGerejaScreen> {
-  static const Color navy = Color(0xFF0D1282);
-  static const Color red = Color(0xFFD71313);
-  static const Color softBg = Color(0xFFF8F9FA);
+  // Mobile consistency colors
+  static const Color navy = Color(0xFF05066F);
+  static const Color gold = Color(0xFFC5A327);
+  static const Color redAccent = Color(0xFFD71313);
+  static const Color softBg = Color(0xFFF7F4FB);
 
-  // State untuk menyimpan pelayanan yang dipilih (Detail)
-  Map<String, dynamic>? selectedItem;
   final String adminWhatsApp = "6281263299741";
 
-  // Data Pelayanan (Sesuai struktur web)
+  // Data Pelayanan (Identik dengan React pelayananData)
   final List<Map<String, dynamic>> items = [
     {
       'id': 1,
-      'nama': 'Sekolah Minggu',
-      'deskripsiSingkat': 'Membina iman anak-anak melalui cerita Alkitab.',
-      'deskripsiLengkap': 'Pelayanan kategorial yang berfokus pada pertumbuhan rohani anak-anak sejak usia dini dengan metode pengajaran yang kreatif, interaktif, dan sangat menyenangkan.',
-      'gambar': 'https://images.unsplash.com/photo-1503945438517-f65904a52ce6?q=80&w=1000',
-      'jadwal': 'Setiap Minggu, 08:00 WIB',
-      'penanggungJawab': 'Pdt. Maria Sulastri',
-      'syarat': ['Memiliki hati untuk anak-anak', 'Sabar dan kreatif', 'Sudah dibaptis air / Jemaat Aktif'],
+      'nama': 'Praise & Worship',
+      'deskripsiSingkat': 'Melayani Tuhan melalui puji-pujian dan musik dalam ibadah.',
+      'deskripsiLengkap': 'Tim musik dan penyanyi yang bertugas memimpin jemaat dalam memuji Tuhan setiap ibadah raya dan kegiatan gereja lainnya.',
+      'gambar': 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1000',
+      'jadwal': 'Latihan: Sabtu, 17:00 WIB',
+      'penanggungJawab': 'Bpk. Andre Siburian',
+      'syarat': ['Jemaat aktif', 'Memiliki bakat musik/vokal', 'Komitmen latihan'],
     },
     {
       'id': 2,
-      'nama': 'Pemuda & Remaja',
-      'deskripsiSingkat': 'Wadah pertumbuhan rohani bagi generasi muda.',
-      'deskripsiLengkap': 'Komunitas bagi kaum muda untuk bertumbuh bersama dalam iman, kepemimpinan, dan talenta. Kami fokus membangun generasi yang takut akan Tuhan.',
-      'gambar': 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?q=80&w=1000',
-      'jadwal': 'Setiap Sabtu, 17:00 WIB',
-      'penanggungJawab': 'Ev. Yohanes Pratama',
-      'syarat': ['Usia 15 - 30 tahun', 'Bersemangat dalam komunitas', 'Aktif dalam kegiatan gereja'],
+      'nama': 'Sekolah Minggu',
+      'deskripsiSingkat': 'Membimbing anak-anak untuk mengenal Tuhan sejak dini.',
+      'deskripsiLengkap': 'Pelayanan kategorial untuk anak-anak dengan metode pengajaran yang menarik dan berbasis Alkitab.',
+      'gambar': 'https://images.unsplash.com/photo-1503945438517-f65904a52ce6?q=80&w=1000',
+      'jadwal': 'Minggu, 08:00 WIB',
+      'penanggungJawab': 'Ibu Sari Nasution',
+      'syarat': ['Hati yang mengasihi anak-anak', 'Sabar dan kreatif'],
     },
     {
       'id': 3,
-      'nama': 'Musik & Pujian',
-      'deskripsiSingkat': 'Melayani Tuhan melalui talenta bermusik.',
-      'deskripsiLengkap': 'Tim yang bertugas memimpin jemaat masuk dalam hadirat Tuhan melalui nyanyian pujian dan penyembahan yang diurapi setiap ibadah raya.',
-      'gambar': 'https://images.unsplash.com/photo-1510915361894-db8b60106cb1?q=80&w=1000',
-      'jadwal': 'Latihan: Setiap Kamis, 19:00 WIB',
-      'penanggungJawab': 'Bpk. David Simanjuntak',
-      'syarat': ['Mampu bernyanyi/bermain alat musik', 'Setia dalam latihan rutin', 'Lulus audisi internal'],
-    },
-    {
-      'id': 4,
-      'nama': 'Multimedia',
-      'deskripsiSingkat': 'Pengelolaan visual dan siaran digital.',
-      'deskripsiLengkap': 'Mendukung pemberitaan Injil melalui teknologi visual, audio, dan dokumentasi digital untuk menjangkau jiwa-jiwa di platform digital.',
-      'gambar': 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=1000',
-      'jadwal': 'Setiap Ibadah Raya',
-      'penanggungJawab': 'Sdr. Kevin Wijaya',
-      'syarat': ['Menguasai alat kamera/OBS/Desain', 'Cekatan dan teliti', 'Mau belajar hal baru'],
+      'nama': 'Multimedia & IT',
+      'deskripsiSingkat': 'Mendukung ibadah melalui teknologi visual dan streaming.',
+      'deskripsiLengkap': 'Bertugas dalam pengelolaan sound system, live streaming, dan penyajian visual selama ibadah berlangsung.',
+      'gambar': 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?q=80&w=1000',
+      'jadwal': 'Standby: Saat Ibadah',
+      'penanggungJawab': 'Sdr. Kevin Panjaitan',
+      'syarat': ['Menguasai dasar komputer/kamera', 'Teliti dan sigap'],
     },
   ];
 
-  Future<void> _openWhatsApp(String message) async {
-    final Uri url = Uri.parse('https://wa.me/$adminWhatsApp?text=${Uri.encodeComponent(message)}');
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
+  Future<void> _launchWhatsApp(String text) async {
+    final Uri url = Uri.parse('https://wa.me/$adminWhatsApp?text=${Uri.encodeComponent(text)}');
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      throw Exception('Could not launch $url');
     }
+  }
+
+  void _showServiceDetail(Map<String, dynamic> item) {
+    // Agar "tidak capek scroll ke bawah", kita gunakan Modal Bottom Sheet
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _ServiceDetailModal(
+        item: item,
+        adminWhatsApp: adminWhatsApp,
+        onContact: (text) => _launchWhatsApp(text),
+      ),
+    );
   }
 
   @override
@@ -76,270 +81,286 @@ class _PelayananGerejaScreenState extends State<PelayananGerejaScreen> {
     return Scaffold(
       drawer: const PublicDrawer(activeMenu: DrawerMenu.pelayanan),
       backgroundColor: softBg,
-      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         surfaceTintColor: Colors.white,
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu_rounded, color: navy, size: 27),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
+        iconTheme: const IconThemeData(color: navy),
         title: Text(
           'PELAYANAN',
-          style: GoogleFonts.montserrat(color: navy, fontSize: 14, fontWeight: FontWeight.w800, letterSpacing: 1.5),
+          style: GoogleFonts.montserrat(color: navy, fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 1.5),
         ),
         centerTitle: true,
       ),
-      body: Stack(
-        children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: Column(
-                    children: [
-                      // SECTION: HERO
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 40, 24, 0),
-                        child: Column(
-                          children: [
-                            Text(
-                              'Bidang Pelayanan',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.montserrat(fontSize: 32, fontWeight: FontWeight.w900, color: navy, letterSpacing: 1.2),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Mari Melayani Tuhan Bersama Kami Melalui Berbagai Bidang Pelayanan yang Tersedia',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.montserrat(fontSize: 16, color: Colors.grey[600], fontWeight: FontWeight.w500, height: 1.5),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // SECTION: BANNER
-                      Container(
-                        margin: const EdgeInsets.all(24),
-                        height: 220,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10))],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(24),
-                          child: Image.network(
-                            'https://images.unsplash.com/photo-1515162305285-0293e4767cc2?q=80&w=1000',
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Container(
-                              color: Colors.grey[300],
-                              child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // SECTION: LIST CARDS
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: Column(
-                          children: items.map((item) => _buildServiceCard(item)).toList(),
-                        ),
-                      ),
-
-                      // SECTION: DETAIL (Muncul dinamis)
-                      if (selectedItem != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 20),
-                          child: _buildDetailSection(),
-                        ),
-
-                      // SECTION: CTA BANNER
-                      _buildCTASection(),
-
-                      const SizedBox(height: 140),
-                    ],
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // 1. JUDUL (Identik React)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 40, 24, 0),
+              child: Column(
+                children: [
+                  Text(
+                    'Berbagai Bidang Pelayanan',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.montserrat(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w900,
+                      color: navy,
+                      height: 1.1,
+                    ),
                   ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Temukan wadah untuk bertumbuh dan melayani bersama di GPdI Jemaat Sibulele',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.montserrat(fontSize: 15, color: textGrey, fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ),
+            ),
+
+            // 2. BANNER (Identik React)
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+              height: 200,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [BoxShadow(color: navy.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10))],
+                image: const DecorationImage(
+                  image: NetworkImage('https://images.unsplash.com/photo-1515162305285-0293e4767cc2?q=80&w=1000'),
+                  fit: BoxFit.cover,
                 ),
-              );
-            },
-          ),
-          const Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: AppBottomNavigation(currentIndex: -1),
-          ),
-        ],
+              ),
+            ),
+
+            // 3. GRID PELAYANAN (Identik React Items)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: items.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 1, // Di mobile lebih baik list ke bawah atau 2 kolom, kita buat list elegan
+                  mainAxisExtent: 280,
+                  mainAxisSpacing: 20,
+                ),
+                itemBuilder: (context, index) => _buildServiceCard(items[index]),
+              ),
+            ),
+
+            // 4. CTA SECTION (Identik React)
+            _buildCTASection(),
+
+            const SizedBox(height: 40),
+          ],
+        ),
       ),
+      bottomNavigationBar: const AppBottomNavigation(currentIndex: -1),
     );
   }
 
   Widget _buildServiceCard(Map<String, dynamic> item) {
-    bool isSelected = selectedItem?['id'] == item['id'];
-
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: isSelected ? navy : Colors.grey.shade100, width: 2),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 20, offset: const Offset(0, 8))],
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white, width: 2),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15)],
       ),
       child: Column(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.network(
-              item['gambar'],
-              height: 70,
-              width: 70,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                height: 70,
-                width: 70,
-                color: Colors.grey[200],
-                child: const Icon(Icons.image_not_supported, color: Colors.grey),
-              ),
+          Container(
+            height: 60,
+            width: 60,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              image: DecorationImage(image: NetworkImage(item['gambar']), fit: BoxFit.cover),
             ),
           ),
-          const SizedBox(height: 16),
-          Text(item['nama'], style: GoogleFonts.montserrat(fontWeight: FontWeight.w900, color: navy, fontSize: 18)),
-          const SizedBox(height: 8),
-          Text(item['deskripsiSingkat'], textAlign: TextAlign.center, style: GoogleFonts.montserrat(color: Colors.grey[600], fontSize: 14, height: 1.5)),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
+          Text(
+            item['nama'],
+            textAlign: TextAlign.center,
+            style: GoogleFonts.montserrat(fontWeight: FontWeight.w800, color: navy, fontSize: 18),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            item['deskripsiSingkat'],
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.montserrat(color: textGrey, fontSize: 13, height: 1.5),
+          ),
+          const Spacer(),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  selectedItem = isSelected ? null : item;
-                });
-              },
+              onPressed: () => _showServiceDetail(item),
               style: ElevatedButton.styleFrom(
-                backgroundColor: isSelected ? Colors.grey[200] : navy,
-                foregroundColor: isSelected ? Colors.black87 : Colors.white,
+                backgroundColor: navy,
+                foregroundColor: Colors.white,
                 elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
               ),
-              child: Text(isSelected ? 'TUTUP DETAIL' : 'LIHAT DETAIL', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 1)),
+              child: Text('Lihat Detail', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildDetailSection() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 30)],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Detail Pelayanan', style: GoogleFonts.montserrat(fontSize: 22, fontWeight: FontWeight.w900, color: navy)),
-              IconButton(onPressed: () => setState(() => selectedItem = null), icon: const Icon(Icons.close_rounded, color: Colors.grey)),
-            ],
-          ),
-          const Divider(height: 32),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Image.network(
-              selectedItem!['gambar'],
-              height: 200,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                height: 200,
-                width: double.infinity,
-                color: Colors.grey[200],
-                child: const Center(child: Icon(Icons.broken_image, size: 50, color: Colors.grey)),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(selectedItem!['nama'], style: GoogleFonts.montserrat(fontSize: 26, fontWeight: FontWeight.w900, color: red)),
-          const SizedBox(height: 16),
-          _detailRow('Jadwal:', selectedItem!['jadwal']),
-          _detailRow('Penanggung Jawab:', selectedItem!['penanggungJawab']),
-          const SizedBox(height: 20),
-          Text(selectedItem!['deskripsiLengkap'], style: GoogleFonts.montserrat(fontSize: 16, height: 1.6, color: Colors.black54, fontStyle: FontStyle.italic)),
-          const SizedBox(height: 24),
-          Text('Syarat Bergabung', style: GoogleFonts.montserrat(fontSize: 18, fontWeight: FontWeight.bold, color: navy)),
-          const SizedBox(height: 12),
-          ... (selectedItem!['syarat'] as List).map((s) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [const Icon(Icons.check_circle, color: red, size: 20), const SizedBox(width: 10), Expanded(child: Text(s, style: GoogleFonts.montserrat(fontSize: 15)))]),
-          )),
-          const SizedBox(height: 32),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () => _openWhatsApp('Shalom admin, saya ingin mengetahui lebih lanjut tentang ${selectedItem!['nama']}.'),
-              icon: const Icon(Icons.message, size: 20),
-              label: Text('HUBUNGI ADMIN', style: GoogleFonts.montserrat(fontWeight: FontWeight.w900, letterSpacing: 1)),
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF25D366), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 18), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _detailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: RichText(text: TextSpan(style: GoogleFonts.montserrat(fontSize: 16, color: Colors.black87), children: [TextSpan(text: '$label ', style: const TextStyle(fontWeight: FontWeight.bold, color: navy)), TextSpan(text: value)])),
     );
   }
 
   Widget _buildCTASection() {
     return Container(
-      margin: const EdgeInsets.fromLTRB(24, 60, 24, 0),
-      padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 32),
+      margin: const EdgeInsets.fromLTRB(24, 60, 24, 20),
+      padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 24),
+      width: double.infinity,
       decoration: BoxDecoration(
         color: navy,
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: [BoxShadow(color: navy.withOpacity(0.4), blurRadius: 30, offset: const Offset(0, 15))],
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [BoxShadow(color: navy.withOpacity(0.2), blurRadius: 20, offset: const Offset(0, 10))],
       ),
       child: Column(
         children: [
-          Text('Terlibat dalam Pelayanan', textAlign: TextAlign.center, style: GoogleFonts.montserrat(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w900, height: 1.2)),
+          Text(
+            'Terlibat dalam Pelayanan',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.montserrat(fontSize: 30, fontWeight: FontWeight.w900, color: Colors.white, height: 1.1),
+          ),
           const SizedBox(height: 20),
           Text(
             'Bergabunglah bersama kami untuk melayani Tuhan dan sesama melalui berbagai pelayanan yang tersedia.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.montserrat(color: Colors.white.withOpacity(0.8), fontSize: 16, fontWeight: FontWeight.w500, height: 1.6),
+            style: GoogleFonts.montserrat(fontSize: 15, color: Colors.white70, height: 1.6),
           ),
           const SizedBox(height: 40),
           ElevatedButton(
-            onPressed: () => _openWhatsApp('Shalom admin, saya ingin mendaftar pelayanan di GPdI Jemaat Sibulele.'),
+            onPressed: () => _launchWhatsApp("Shalom admin, saya ingin mendaftar pelayanan di GPdI Jemaat Sibulele."),
             style: ElevatedButton.styleFrom(
-              backgroundColor: red,
+              backgroundColor: redAccent,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 20),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
-              elevation: 8,
-              shadowColor: red.withOpacity(0.5),
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
             ),
-            child: Text('DAFTAR PELAYANAN', style: GoogleFonts.montserrat(fontSize: 15, fontWeight: FontWeight.w900, letterSpacing: 1)),
+            child: Text('Daftar Pelayanan', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 16)),
           ),
+        ],
+      ),
+    );
+  }
+
+  static const Color textGrey = Color(0xFF64748B);
+}
+
+class _ServiceDetailModal extends StatelessWidget {
+  final Map<String, dynamic> item;
+  final String adminWhatsApp;
+  final Function(String) onContact;
+
+  const _ServiceDetailModal({required this.item, required this.adminWhatsApp, required this.onContact});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.85,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+      ),
+      child: Column(
+        children: [
+          // Drag Handle
+          Center(
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+            ),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 40),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Detail Pelayanan', style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF05066F), fontSize: 24)),
+                      IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close_rounded)),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image.network(item['gambar'], height: 220, width: double.infinity, fit: BoxFit.cover),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(item['nama'], style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Color(0xFFD71313))),
+                  const SizedBox(height: 16),
+                  _buildDetailRow(Icons.event_note_rounded, 'Jadwal:', item['jadwal']),
+                  _buildDetailRow(Icons.person_pin_rounded, 'Penanggung Jawab:', item['penanggungJawab']),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Divider(),
+                  ),
+                  Text(
+                    item['deskripsiLengkap'],
+                    style: const TextStyle(fontSize: 15, color: Color(0xFF4B5563), fontStyle: FontStyle.italic, height: 1.8),
+                  ),
+                  const SizedBox(height: 32),
+                  const Text('Syarat Bergabung', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF05066F))),
+                  const SizedBox(height: 12),
+                  ...item['syarat'].map<Widget>((s) => Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.check_circle, size: 18, color: Color(0xFFD71313)),
+                            const SizedBox(width: 12),
+                            Text(s, style: const TextStyle(fontSize: 15, color: Color(0xFF374151))),
+                          ],
+                        ),
+                      )),
+                  const SizedBox(height: 40),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => onContact("Shalom admin, saya ingin mengetahui lebih lanjut tentang ${item['nama']}"),
+                      icon: const Icon(Icons.chat_bubble_rounded),
+                      label: const Text('Hubungi Admin'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF25D366),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: const Color(0xFF05066F)),
+          const SizedBox(width: 12),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF05066F))),
+          const SizedBox(width: 8),
+          Expanded(child: Text(value, style: const TextStyle(color: Color(0xFF374151)))),
         ],
       ),
     );

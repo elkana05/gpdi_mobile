@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../jemaatpublik/ui/public_drawer.dart';
 import '../../jemaatpublik/ui/app_bottom_navigation.dart';
 import '../../auth/ui/login_screen.dart';
+import '../../jemaataktif/ui/member_profile_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -15,51 +18,56 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      drawer: const PublicDrawer(
-        activeMenu: DrawerMenu.none,
-      ),
-      backgroundColor: softBg,
-      resizeToAvoidBottomInset: false,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        surfaceTintColor: Colors.white,
-        leading: Builder(
-          builder: (context) {
-            return IconButton(
-              icon: const Icon(
-                Icons.menu_rounded,
-                color: navy,
-                size: 27,
-              ),
-              onPressed: () {
-                Scaffold.of(context).openDrawer();
-              },
-            );
-          },
-        ),
-        titleSpacing: 0,
-        title: const Text(
-          'Profil',
-          style: TextStyle(
-            color: navy,
-            fontSize: 20,
-            fontWeight: FontWeight.w900,
+    return Consumer<AuthProvider>(
+      builder: (context, auth, _) {
+        // Jika ternyata user sudah login, arahkan ke MemberProfileScreen
+        if (auth.status == AuthStatus.authenticated) {
+          return const MemberProfileScreen();
+        }
+
+        return Scaffold(
+          drawer: const PublicDrawer(
+            activeMenu: DrawerMenu.none,
           ),
-        ),
-        centerTitle: true,
-      ),
-      body: Stack(
-        children: [
-          LayoutBuilder(
+          backgroundColor: softBg,
+          resizeToAvoidBottomInset: false,
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            elevation: 0,
+            surfaceTintColor: Colors.white,
+            leading: Builder(
+              builder: (context) {
+                return IconButton(
+                  icon: const Icon(
+                    Icons.menu_rounded,
+                    color: navy,
+                    size: 27,
+                  ),
+                  onPressed: () {
+                    Scaffold.of(context).openDrawer();
+                  },
+                );
+              },
+            ),
+            titleSpacing: 0,
+            title: const Text(
+              'Profil',
+              style: TextStyle(
+                color: navy,
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            centerTitle: true,
+          ),
+          body: LayoutBuilder(
             builder: (context, constraints) {
               return SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: ConstrainedBox(
                   constraints: BoxConstraints(minHeight: constraints.maxHeight),
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 36, 24, 140),
+                    padding: const EdgeInsets.fromLTRB(24, 36, 24, 40),
                     child: Column(
                       children: const [
                         _GuestProfileCard(),
@@ -72,15 +80,9 @@ class ProfileScreen extends StatelessWidget {
               );
             },
           ),
-
-          const Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: AppBottomNavigation(currentIndex: 2),
-          ),
-        ],
-      ),
+          bottomNavigationBar: const AppBottomNavigation(currentIndex: 2),
+        );
+      },
     );
   }
 }

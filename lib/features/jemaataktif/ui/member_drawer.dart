@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../auth/providers/auth_provider.dart';
-import '../../jemaatpublik/ui/home_screen.dart';
-import 'jadwal_rayon_screen.dart';
-import 'member_home_screen.dart';
-import 'request_surat_screen.dart';
-import 'member_pengumuman.dart';
 
 enum MemberDrawerMenu {
   beranda,
   jadwalRayon,
   requestSurat,
   pengumuman,
+  profil,
   none,
 }
 
@@ -30,36 +27,17 @@ class MemberDrawer extends StatelessWidget {
   static const Color menuText = Color(0xFFD9DAFF);
   static const Color subtitleText = Color(0xFFA8A9D9);
 
-  void _goToPage(
-      BuildContext context, MemberDrawerMenu targetMenu, Widget page) {
-    if (activeMenu == targetMenu) return;
-
-    Navigator.pop(context);
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => page,
-      ),
-    );
+  void _goToPage(BuildContext context, String path) {
+    Navigator.pop(context); // Tutup drawer
+    context.go(path);
   }
 
   Future<void> _logout(BuildContext context) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
     Navigator.pop(context);
-
     await authProvider.logout();
-
     if (!context.mounted) return;
-
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const HomeScreen(),
-      ),
-      (route) => false,
-    );
+    context.go('/home');
   }
 
   @override
@@ -100,58 +78,38 @@ class MemberDrawer extends StatelessWidget {
                       icon: Icons.home_rounded,
                       title: 'Beranda',
                       isActive: activeMenu == MemberDrawerMenu.beranda,
-                      onTap: () {
-                        _goToPage(
-                          context,
-                          MemberDrawerMenu.beranda,
-                          const MemberHomeScreen(),
-                        );
-                      },
+                      onTap: () => _goToPage(context, '/member-home'),
                     ),
                     _MemberDrawerItem(
                       icon: Icons.calendar_month_outlined,
                       title: 'Jadwal Ibadah Rayon',
                       isActive: activeMenu == MemberDrawerMenu.jadwalRayon,
-                      onTap: () {
-                        _goToPage(
-                          context,
-                          MemberDrawerMenu.jadwalRayon,
-                          const JadwalRayonScreen(),
-                        );
-                      },
+                      onTap: () => _goToPage(context, '/jadwal-rayon'),
                     ),
                     _MemberDrawerItem(
                       icon: Icons.groups_rounded,
                       title: 'Request Surat',
                       isActive: activeMenu == MemberDrawerMenu.requestSurat,
-                      onTap: () {
-                        _goToPage(
-                          context,
-                          MemberDrawerMenu.requestSurat,
-                          const RequestSuratScreen(),
-                        );
-                      },
+                      onTap: () => _goToPage(context, '/request-surat'),
                     ),
                     _MemberDrawerItem(
                       icon: Icons.campaign_outlined,
                       title: 'Pengumuman',
                       isActive: activeMenu == MemberDrawerMenu.pengumuman,
-                      onTap: () {
-                        _goToPage(
-                          context,
-                          MemberDrawerMenu.pengumuman,
-                          const MemberPengumumanScreen(),
-                        );
-                      },
+                      onTap: () => _goToPage(context, '/member-pengumuman'),
+                    ),
+                    _MemberDrawerItem(
+                      icon: Icons.person_outline_rounded,
+                      title: 'Profil Saya',
+                      isActive: activeMenu == MemberDrawerMenu.profil,
+                      onTap: () => _goToPage(context, '/member-profile'),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 20),
               _LogoutButton(
-                onTap: () {
-                  _logout(context);
-                },
+                onTap: () => _logout(context),
               ),
             ],
           ),
@@ -179,11 +137,7 @@ class _MemberDrawerHeader extends StatelessWidget {
           child: const CircleAvatar(
             radius: 22,
             backgroundColor: Colors.white,
-            child: Icon(
-              Icons.person,
-              color: MemberDrawer.navy,
-              size: 26,
-            ),
+            backgroundImage: AssetImage('web/favicon.png'),
           ),
         ),
         const SizedBox(width: 14),
@@ -192,7 +146,7 @@ class _MemberDrawerHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Syalom, ${user?.fullName?.split(" ").first ?? "Jemaat"}',
+                'Syalom, ${user?.fullName.split(" ").first ?? "Jemaat"}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(

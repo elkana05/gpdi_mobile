@@ -136,7 +136,12 @@ class _LoginScreenState extends State<LoginScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.church_outlined, color: LoginScreen.navy, size: 28),
+        Image.asset(
+          'web/favicon.png',
+          height: 32,
+          errorBuilder: (context, error, stackTrace) =>
+              Icon(Icons.church_outlined, color: LoginScreen.navy, size: 28),
+        ),
         const SizedBox(width: 8),
         Text(
           'GPDI Sibulele',

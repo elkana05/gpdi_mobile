@@ -16,8 +16,8 @@ class PastorBottomNavigation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 104,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      height: 90, // Ukuran disesuaikan agar lebih proporsional
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: const BorderRadius.vertical(
@@ -25,7 +25,7 @@ class PastorBottomNavigation extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.07),
+            color: Colors.black.withValues(alpha: 0.07),
             blurRadius: 24,
             offset: const Offset(0, -8),
           ),
@@ -84,7 +84,7 @@ class _BottomNavItem extends StatelessWidget {
       borderRadius: BorderRadius.circular(14),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        width: 75, // Sedikit lebih kecil agar muat 4 item
+        width: 75,
         height: 56,
         decoration: BoxDecoration(
           color: isActive ? PastorBottomNavigation.navy : Colors.transparent,
@@ -96,14 +96,14 @@ class _BottomNavItem extends StatelessWidget {
             Icon(
               icon,
               color: isActive ? Colors.white : PastorBottomNavigation.inactiveColor,
-              size: 24,
+              size: 22, // Ukuran ikon dioptimalkan
             ),
             const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
                 color: isActive ? Colors.white : PastorBottomNavigation.inactiveColor,
-                fontSize: 9, // Ukuran font disesuaikan
+                fontSize: 8, // Font diatur agar tidak membebani layout
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.5,
               ),

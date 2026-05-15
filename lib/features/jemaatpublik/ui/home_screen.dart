@@ -19,8 +19,6 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-
     return Scaffold(
       drawer: const PublicDrawer(
         activeMenu: DrawerMenu.beranda,
@@ -39,48 +37,49 @@ class HomeScreen extends StatelessWidget {
             );
           },
         ),
-        title: const Text(
-          'GPdI Sibulele',
-          style: TextStyle(color: navy, fontSize: 17, fontWeight: FontWeight.w700),
+        title: Row(
+          children: [
+            Image.asset(
+              'web/favicon.png',
+              height: 30,
+              errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              'GPdI Sibulele',
+              style: TextStyle(color: navy, fontSize: 17, fontWeight: FontWeight.w700),
+            ),
+          ],
         ),
       ),
-      body: Stack(
-        children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 28, 24, 130),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildHeader(),
-                        const SizedBox(height: 30),
-                        _VerseCard(),
-                        const SizedBox(height: 40),
-                        _buildScheduleSection(context),
-                        const SizedBox(height: 16),
-                        _MenuGrid(),
-                        const SizedBox(height: 40),
-                        _ContactCard(),
-                      ],
-                    ),
-                  ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 28, 24, 40),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(),
+                    const SizedBox(height: 30),
+                    _VerseCard(),
+                    const SizedBox(height: 40),
+                    _buildScheduleSection(context),
+                    const SizedBox(height: 16),
+                    _MenuGrid(),
+                    const SizedBox(height: 40),
+                    _ContactCard(),
+                  ],
                 ),
-              );
-            }
-          ),
-          const Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: AppBottomNavigation(currentIndex: 0),
-          ),
-        ],
+              ),
+            ),
+          );
+        }
       ),
+      bottomNavigationBar: const AppBottomNavigation(currentIndex: 0),
     );
   }
 

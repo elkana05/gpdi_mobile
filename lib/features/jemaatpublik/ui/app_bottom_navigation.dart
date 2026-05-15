@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../auth/providers/auth_provider.dart';
 import 'home_screen.dart';
 import '../../alkitab/ui/alkitab_screen.dart';
 import '../../profile/ui/profile_screen.dart';
+import '../../jemaataktif/ui/member_profile_screen.dart';
 
 class AppBottomNavigation extends StatelessWidget {
   final int currentIndex;
@@ -17,16 +20,18 @@ class AppBottomNavigation extends StatelessWidget {
   void _navigate(BuildContext context, int index) {
     if (index == currentIndex) return;
 
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final isLoggedIn = authProvider.status == AuthStatus.authenticated;
+
     Widget targetPage;
 
     if (index == 0) {
       targetPage = const HomeScreen();
     } else if (index == 1) {
-      // AlkitabScreen sekarang adaptif, bisa digunakan publik & member
       targetPage = const AlkitabScreen();
     } else {
-      // ProfileScreen untuk publik (tampilan ajakan login)
-      targetPage = const ProfileScreen();
+      // Jika sudah login, arahkan ke MemberProfileScreen, jika belum ke ProfileScreen (Guest)
+      targetPage = isLoggedIn ? const MemberProfileScreen() : const ProfileScreen();
     }
 
     Navigator.pushReplacement(

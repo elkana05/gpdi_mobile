@@ -8,6 +8,9 @@ class ApiClient {
   late final Dio dio;
   final _storage = const FlutterSecureStorage();
 
+  String? _cachedToken;
+  Future<String?>? _tokenFuture;
+
   ApiClient._internal() {
     dio = Dio(
       BaseOptions(
@@ -24,37 +27,53 @@ class ApiClient {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          // Log URL yang sedang dipanggil (Buka Logcat untuk melihat ini)
-          debugPrint("🌐 API CALL: ${options.method} ${options.baseUrl}${options.path}");
+          if (_cachedToken != null) {
+            options.headers['Authorization'] = 'Bearer $_cachedToken';
+            return handler.next(options);
+          }
 
-          final token = await _storage.read(key: 'jwt_token');
-          if (token != null) {
-            options.headers['Authorization'] = 'Bearer $token';
+          _tokenFuture ??= _storage.read(key: 'jwt_token');
+          _cachedToken = await _tokenFuture;
+
+          if (_cachedToken != null) {
+            options.headers['Authorization'] = 'Bearer $_cachedToken';
           }
           return handler.next(options);
         },
         onError: (DioException e, handler) {
-          debugPrint("❌ API ERROR [${e.response?.statusCode}]: ${e.message}");
+          if (e.response?.statusCode == 401) {
+            _cachedToken = null;
+            _tokenFuture = null;
+          }
           return handler.next(e);
         },
       ),
     );
 
     if (kDebugMode) {
-      dio.interceptors.add(LogInterceptor(requestBody: true, responseBody: true));
+      dio.interceptors.add(LogInterceptor(
+        requestHeader: true,
+        requestBody: true,
+        responseHeader: false,
+        responseBody: true, // Diaktifkan untuk membantu debug koneksi
+        error: true,
+      ));
     }
   }
 
   factory ApiClient() => instance;
+
+  void resetToken() {
+    _cachedToken = null;
+    _tokenFuture = null;
+  }
 
   Future<dynamic> get(String endpoint) async {
     try {
       final response = await dio.get(endpoint);
       return response.data;
     } on DioException catch (e) {
-      throw _handleDioError(e);
-    } catch (e) {
-      throw 'Terjadi kesalahan sistem: $e';
+      throw _handleError(e);
     }
   }
 
@@ -63,7 +82,7 @@ class ApiClient {
       final response = await dio.post(endpoint, data: body ?? {});
       return response.data;
     } on DioException catch (e) {
-      throw _handleDioError(e);
+      throw _handleError(e);
     }
   }
 
@@ -72,18 +91,21 @@ class ApiClient {
       final response = await dio.delete(endpoint);
       return response.data;
     } on DioException catch (e) {
-      throw _handleDioError(e);
+      throw _handleError(e);
     }
   }
 
-  String _handleDioError(DioException e) {
-    if (e.type == DioExceptionType.connectionError || e.type == DioExceptionType.connectionTimeout) {
-      return 'Koneksi terputus. Pastikan laptop & HP di Wi-Fi yang sama dan Docker Port 8000 terbuka.';
+  String _handleError(DioException e) {
+    if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.sendTimeout) {
+      return "Koneksi Timeout. Pastikan Server Nyala & IP Laptop Benar.";
     }
-    if (e.response != null) {
-      final msg = e.response?.data['message'] ?? 'Gagal memproses permintaan.';
-      return 'Server Error (${e.response?.statusCode}): $msg';
+    if (e.type == DioExceptionType.connectionError) {
+      return "Tidak bisa terhubung ke server (${ApiConstants.baseUrl}). Cek Wi-Fi & IP.";
     }
-    return e.message ?? 'Kesalahan tidak diketahui.';
+
+    if (e.response != null && e.response?.data is Map) {
+      return e.response?.data['message'] ?? 'Gagal memproses data (${e.response?.statusCode}).';
+    }
+    return 'Terjadi kesalahan: ${e.message}';
   }
 }

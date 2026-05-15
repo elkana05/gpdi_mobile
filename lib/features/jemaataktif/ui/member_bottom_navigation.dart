@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'member_home_screen.dart';
-import 'member_profile_screen.dart';
-import '../../alkitab/ui/alkitab_screen.dart';
+import 'package:go_router/go_router.dart';
 
 class MemberBottomNavigation extends StatelessWidget {
   final int currentIndex;
@@ -17,23 +15,13 @@ class MemberBottomNavigation extends StatelessWidget {
   void _navigate(BuildContext context, int index) {
     if (index == currentIndex) return;
 
-    Widget targetPage;
-
     if (index == 0) {
-      targetPage = const MemberHomeScreen();
+      context.go('/member-home');
     } else if (index == 1) {
-      targetPage = const AlkitabScreen();
+      context.go('/alkitab');
     } else {
-      // Mengarah ke profil jemaat aktif
-      targetPage = const MemberProfileScreen();
+      context.go('/member-profile');
     }
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => targetPage,
-      ),
-    );
   }
 
   @override
@@ -110,11 +98,7 @@ class _BottomNavItem extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                icon,
-                color: Colors.white,
-                size: 24,
-              ),
+              Icon(icon, color: Colors.white, size: 24),
               const SizedBox(height: 3),
               Text(
                 label,
@@ -140,11 +124,7 @@ class _BottomNavItem extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              color: MemberBottomNavigation.inactiveColor,
-              size: 24,
-            ),
+            Icon(icon, color: MemberBottomNavigation.inactiveColor, size: 24),
             const SizedBox(height: 5),
             Text(
               label,

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../core/network/api_client.dart';
+import 'package:provider/provider.dart';
+import '../providers/event_provider.dart';
+import '../models/event_model.dart';
 import '../../../core/constants/api_constants.dart';
 import 'public_drawer.dart';
 import 'app_bottom_navigation.dart';
@@ -13,21 +15,15 @@ class JadwalIbadahScreen extends StatefulWidget {
 }
 
 class _JadwalIbadahScreenState extends State<JadwalIbadahScreen> {
-  // Warna disesuaikan dengan Web React
-  static const Color navy = Color(0xFF0D1282);
+  // Theme colors consistent with the app
+  static const Color navy = Color(0xFF05066F);
+  static const Color gold = Color(0xFFC5A327);
   static const Color redAccent = Color(0xFFD71313);
-  static const Color softBg = Colors.white;
+  static const Color softBg = Color(0xFFF7F4FB);
+  static const Color textDark = Color(0xFF1E1E2F);
+  static const Color textGrey = Color(0xFF85879A);
 
-  bool isLoading = true;
-  String errorMsg = '';
-  List<dynamic> worshipSchedules = [];
-  List<dynamic> events = [];
-
-  // Filter & Search states
-  String selectedCategory = "Semua Kegiatan";
-  String searchQuery = "";
-  final TextEditingController _searchController = TextEditingController();
-
+  // Categories exactly as defined in React
   final List<String> kategoriOptions = [
     "Semua Kegiatan",
     "Ibadah Raya Minggu",
@@ -37,185 +33,200 @@ class _JadwalIbadahScreenState extends State<JadwalIbadahScreen> {
     "Doa Malam Jemaat"
   ];
 
+  String selectedCategory = "Semua Kegiatan";
+  String searchQuery = "";
+
   @override
   void initState() {
     super.initState();
-    _fetchData();
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _fetchData() async {
-    if (!mounted) return;
-    setState(() {
-      isLoading = true;
-      errorMsg = '';
-    });
-
-    try {
-      final results = await Future.wait([
-        ApiClient().get(ApiConstants.worshipSchedules),
-        ApiClient().get(ApiConstants.activitySchedules),
-      ]);
-
-      if (mounted) {
-        setState(() {
-          worshipSchedules = results[0] is List ? results[0] : (results[0]['data'] ?? []);
-          events = results[1] is List ? results[1] : (results[1]['data'] ?? []);
-          isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          errorMsg = "Gagal memuat data jadwal.";
-          isLoading = false;
-        });
-      }
-    }
-  }
-
-  // Filter logic matching the React 'useMemo'
-  List<dynamic> get _filteredWorship {
-    return worshipSchedules.where((item) {
-      final String cat = (item['category'] ?? item['nama_ibadah'] ?? item['nama'] ?? "").toString();
-      final bool matchKat = selectedCategory == "Semua Kegiatan" || cat == selectedCategory;
-
-      final String q = searchQuery.toLowerCase();
-      final String hari = (item['day_of_week'] ?? item['hari'] ?? "").toString().toLowerCase();
-      final String tempat = (item['location'] ?? item['tempat'] ?? "").toString().toLowerCase();
-      final String nama = cat.toLowerCase();
-
-      final bool matchCari = hari.contains(q) || nama.contains(q) || tempat.contains(q);
-
-      return matchKat && matchCari;
-    }).toList();
+    Future.microtask(() =>
+        Provider.of<EventProvider>(context, listen: false).fetchPublicEvents());
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: const PublicDrawer(activeMenu: DrawerMenu.jadwalIbadah),
-      backgroundColor: softBg,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         surfaceTintColor: Colors.white,
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu_rounded, color: navy, size: 27),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
+        iconTheme: const IconThemeData(color: navy),
         title: const Text(
           'Jadwal & Kegiatan',
-          style: TextStyle(color: navy, fontSize: 17, fontWeight: FontWeight.w800),
+          style: TextStyle(color: navy, fontSize: 17, fontWeight: FontWeight.w700),
         ),
         centerTitle: true,
       ),
-      body: Stack(
-        children: [
-          RefreshIndicator(
-            onRefresh: _fetchData,
-            color: navy,
+      body: Consumer<EventProvider>(
+        builder: (context, provider, child) {
+          // Filter Logic matching React's useMemo
+          final filteredWorship = provider.worshipSchedules.where((item) {
+            final matchKat = selectedCategory == "Semua Kegiatan" || item.title == selectedCategory;
+
+            final q = searchQuery.toLowerCase();
+            final matchCari = item.day.toLowerCase().contains(q) ||
+                item.title.toLowerCase().contains(q) ||
+                item.location.toLowerCase().contains(q);
+
+            return matchKat && matchCari;
+          }).toList();
+
+          return RefreshIndicator(
+            onRefresh: () => provider.fetchPublicEvents(),
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               child: Column(
                 children: [
+                  // ══ JUDUL HALAMAN (Matching React Header) ══
                   _buildHeader(),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 130),
-                    child: Column(
-                      children: [
-                        const Divider(height: 1, color: Color(0xFFE2E8F0)),
-                        const SizedBox(height: 30),
 
-                        _buildSectionTitle("Jadwal Ibadah Rutin"),
-                        const SizedBox(height: 25),
+                  // ══ BANNER IMAGE (Matching React) ══
+                  _buildBanner(),
 
-                        _buildFilterControls(),
-                        const SizedBox(height: 20),
-
-                        if (isLoading)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 40),
-                            child: CircularProgressIndicator(color: navy),
-                          )
-                        else if (errorMsg.isNotEmpty)
-                          _buildErrorState()
-                        else if (_filteredWorship.isEmpty)
-                          _buildEmptyState("Tidak ada jadwal ibadah yang ditemukan.")
-                        else
-                          ..._filteredWorship.map((s) => _buildScheduleCard(s)),
-
-                        const SizedBox(height: 50),
-                        _buildSectionTitle("Kegiatan Khusus / Event"),
-                        const SizedBox(height: 30),
-
-                        if (!isLoading)
-                          if (events.isEmpty)
-                            _buildEmptyState("Tidak ada event khusus dalam waktu dekat.")
-                          else
-                            ...events.map((e) => _buildEventCard(e)),
-                      ],
-                    ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 24),
+                    child: Divider(color: Color(0xFFCBD5E1), height: 48), // border-slate-300
                   ),
+
+                  // ══ JADWAL IBADAH RUTIN SECTION ══
+                  const SizedBox(height: 32),
+                  const Text(
+                    "Jadwal Ibadah Rutin",
+                    style: TextStyle(color: navy, fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Filters (Dropdown & Search)
+                  _buildFilters(),
+
+                  // Worship Table/List
+                  if (provider.isLoading)
+                    const Center(child: Padding(padding: EdgeInsets.all(40), child: CircularProgressIndicator(color: navy)))
+                  else if (filteredWorship.isEmpty)
+                    _buildEmptyState("Tidak ada jadwal ibadah yang ditemukan.")
+                  else
+                    _buildWorshipTable(filteredWorship),
+
+                  // ══ KEGIATAN KHUSUS / EVENT SECTION ══
+                  const SizedBox(height: 80),
+                  const Text(
+                    "KEGIATAN KHUSUS / EVENT",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: navy, fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: 2),
+                  ),
+                  const SizedBox(height: 40),
+
+                  if (provider.isLoading)
+                    const Center(child: CircularProgressIndicator(color: navy))
+                  else if (provider.activities.isEmpty)
+                    _buildEmptyState("Tidak ada event khusus dalam waktu dekat.")
+                  else
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      itemCount: provider.activities.length,
+                      itemBuilder: (context, index) => _buildEventCard(provider.activities[index]),
+                    ),
+
+                  const SizedBox(height: 60),
                 ],
               ),
             ),
-          ),
-          const Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: AppBottomNavigation(currentIndex: -1),
-          ),
-        ],
+          );
+        },
       ),
+      bottomNavigationBar: const AppBottomNavigation(currentIndex: -1),
     );
   }
 
   Widget _buildHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 30, 20, 30),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 56, 20, 16),
       child: Column(
         children: [
           const Text(
-            "Jadwal Ibadah & Kegiatan",
+            'Jadwal Ibadah & Kegiatan',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 28,
+              fontSize: 32,
               fontWeight: FontWeight.w900,
               color: navy,
-              letterSpacing: 0.5,
-              height: 1.2,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Informasi Jadwal Ibadah Rutin dan Kegiatan Gereja',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBanner() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        height: 180,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade300),
+          image: const DecorationImage(
+            image: NetworkImage("https://images.unsplash.com/photo-1438232992991-995b7058bbb3?q=80&w=1440&auto=format&fit=crop"),
+            fit: BoxFit.cover,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilters() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          // Custom Dropdown
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: const Color(0xFF94A3B8)), // border-slate-400
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: selectedCategory,
+                isExpanded: true,
+                icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF64748B)),
+                onChanged: (String? val) {
+                  if (val != null) setState(() => selectedCategory = val);
+                },
+                items: kategoriOptions.map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+                  );
+                }).toList(),
+              ),
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            "Informasi Jadwal Ibadah Rutin dan Kegiatan Gereja",
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 15, color: Colors.grey, fontWeight: FontWeight.w500),
-          ),
-          const SizedBox(height: 25),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(15),
-            child: Image.network(
-              "https://images.unsplash.com/photo-1438232992991-995b7058bbb3?q=80&w=1440&auto=format&fit=crop",
-              height: 200,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                height: 200,
-                width: double.infinity,
-                color: Colors.grey[200],
-                child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
-              ),
+          // Search Field
+          TextField(
+            onChanged: (val) => setState(() => searchQuery = val),
+            style: const TextStyle(fontSize: 14),
+            decoration: InputDecoration(
+              hintText: "Cari Hari/Tempat...",
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF94A3B8))),
+              focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: navy)),
             ),
           ),
         ],
@@ -223,238 +234,131 @@ class _JadwalIbadahScreenState extends State<JadwalIbadahScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      textAlign: TextAlign.center,
-      style: const TextStyle(
-        color: navy,
-        fontSize: 22,
-        fontWeight: FontWeight.w800,
-      ),
-    );
-  }
-
-  Widget _buildFilterControls() {
-    return Column(
-      children: [
-        GestureDetector(
-          onTap: () => _showCategoryPicker(),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: const Color(0xFFCBD5E1)),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  selectedCategory,
-                  style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF334155), fontSize: 14),
-                ),
-                const Icon(Icons.keyboard_arrow_down, color: Colors.grey, size: 20),
+  Widget _buildWorshipTable(List<WorshipScheduleModel> schedules) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFCBD5E1)),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4)],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: DataTable(
+              headingRowColor: MaterialStateProperty.all(const Color(0xFFF9F9F9)),
+              columnSpacing: 24,
+              columns: const [
+                DataColumn(label: Text('HARI', style: TextStyle(color: navy, fontWeight: FontWeight.bold, fontSize: 12))),
+                DataColumn(label: Text('KATEGORI IBADAH', style: TextStyle(color: navy, fontWeight: FontWeight.bold, fontSize: 12))),
+                DataColumn(label: Text('WAKTU', style: TextStyle(color: navy, fontWeight: FontWeight.bold, fontSize: 12))),
+                DataColumn(label: Text('TEMPAT', style: TextStyle(color: navy, fontWeight: FontWeight.bold, fontSize: 12))),
               ],
+              rows: schedules.map((item) {
+                return DataRow(cells: [
+                  DataCell(Text(item.day, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B)))),
+                  DataCell(Text(item.title, style: const TextStyle(color: navy, fontWeight: FontWeight.w600))),
+                  DataCell(Text("${item.time} WIB", style: const TextStyle(color: Color(0xFF334155), fontWeight: FontWeight.w500))),
+                  DataCell(Text(item.location, style: const TextStyle(color: Color(0xFF334155)))),
+                ]);
+              }).toList(),
             ),
           ),
         ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _searchController,
-          onChanged: (val) => setState(() => searchQuery = val),
-          decoration: InputDecoration(
-            hintText: "Cari Hari/Tempat...",
-            hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
-            prefixIcon: const Icon(Icons.search, size: 20, color: Colors.grey),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: navy, width: 1.5),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _showCategoryPicker() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 20),
-                child: Text("Pilih Kategori", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: navy)),
-              ),
-              const Divider(height: 1),
-              Flexible(
-                child: ListView(
-                  shrinkWrap: true,
-                  children: kategoriOptions.map((k) => ListTile(
-                    title: Text(k, style: TextStyle(
-                      color: selectedCategory == k ? navy : Colors.black87,
-                      fontWeight: selectedCategory == k ? FontWeight.w800 : FontWeight.w500,
-                    )),
-                    trailing: selectedCategory == k ? const Icon(Icons.check_circle, color: navy) : null,
-                    onTap: () {
-                      setState(() => selectedCategory = k);
-                      Navigator.pop(context);
-                    },
-                  )).toList(),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildScheduleCard(dynamic item) {
-    final String title = item['category'] ?? item['nama_ibadah'] ?? item['nama'] ?? '-';
-    final String day = item['day_of_week'] ?? item['hari'] ?? '-';
-    final String time = item['start_time'] ?? item['jam'] ?? item['waktu'] ?? '-';
-    final String loc = item['location'] ?? item['tempat'] ?? '-';
-
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF9F9F9),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(day, style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.black, fontSize: 16)),
-          const SizedBox(height: 4),
-          Text(title, style: const TextStyle(color: navy, fontWeight: FontWeight.w800, fontSize: 17)),
-          const SizedBox(height: 15),
-          Row(
-            children: [
-              const Icon(Icons.access_time_filled, size: 16, color: Colors.grey),
-              const SizedBox(width: 8),
-              Text("$time WIB", style: const TextStyle(fontSize: 14, color: Colors.black87, fontWeight: FontWeight.w600)),
-              const SizedBox(width: 25),
-              const Icon(Icons.location_on, size: 16, color: Colors.grey),
-              const SizedBox(width: 8),
-              Expanded(child: Text(loc, style: const TextStyle(fontSize: 14, color: Colors.black54, fontWeight: FontWeight.w500))),
-            ],
-          ),
-        ],
       ),
     );
   }
 
-  Widget _buildEventCard(dynamic item) {
-    final String title = item['judul'] ?? item['title'] ?? item['nama_kegiatan'] ?? '-';
-    final String desc = item['description'] ?? item['deskripsi'] ?? '';
-    final String dateStr = item['event_date'] ?? item['tanggal'] ?? '';
-    final String img = item['gambar'] ?? '';
-
-    String formattedDate = '-';
-    if (dateStr.isNotEmpty) {
-      try {
-        DateTime dt = DateTime.parse(dateStr);
-        formattedDate = DateFormat('dd MMMM yyyy', 'id_ID').format(dt);
-      } catch (e) {
-        formattedDate = dateStr;
-      }
+  Widget _buildEventCard(ActivityModel item) {
+    String formattedDate = "-";
+    try {
+      final date = DateTime.parse(item.date);
+      formattedDate = DateFormat('dd MMMM yyyy', 'id_ID').format(date);
+    } catch (_) {
+      formattedDate = item.date;
     }
 
-    final imageUrl = img.isNotEmpty
-      ? (img.startsWith('http') ? img : "${ApiConstants.host}/storage/$img")
-      : "https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800";
-
     return Container(
-      margin: const EdgeInsets.only(bottom: 25),
+      margin: const EdgeInsets.only(bottom: 32),
       decoration: BoxDecoration(
         color: const Color(0xFFF9F9F9),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 5))],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Image Section
           Stack(
             children: [
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                 child: Image.network(
-                  imageUrl,
+                  item.image != null && item.image!.isNotEmpty
+                      ? (item.image!.startsWith('http') ? item.image! : "http://10.220.181.201:8003/storage/${item.image}")
+                      : "https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800",
                   height: 200,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  errorBuilder: (c, e, s) => Container(
-                    height: 200,
-                    width: double.infinity,
-                    color: Colors.grey[200],
-                    child: const Icon(Icons.image_not_supported, size: 40, color: Colors.grey)
-                  ),
+                  errorBuilder: (_, __, ___) => Container(height: 200, color: Colors.grey.shade200),
                 ),
               ),
               Positioned(
-                top: 15,
-                left: 15,
+                top: 16,
+                left: 16,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(color: redAccent, borderRadius: BorderRadius.circular(25), boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)]),
-                  child: const Text("EVENT KHUSUS", style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(color: redAccent, borderRadius: BorderRadius.circular(20)),
+                  child: const Text('EVENT KHUSUS', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
           ),
+          // Content Section
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(color: navy, fontSize: 20, fontWeight: FontWeight.w900)),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    const Text("Tanggal", style: TextStyle(fontWeight: FontWeight.w900, color: redAccent, fontSize: 14)),
-                    Text(" : $formattedDate", style: const TextStyle(fontSize: 14, color: Colors.black87, fontWeight: FontWeight.w500)),
-                  ],
-                ),
-                const SizedBox(height: 10),
                 Text(
-                  desc,
+                  item.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: navy, fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                RichText(
+                  text: TextSpan(
+                    style: const TextStyle(color: Color(0xFF4B5563), fontSize: 16),
+                    children: [
+                      const TextSpan(text: 'Tanggal', style: TextStyle(fontWeight: FontWeight.bold, color: redAccent)),
+                      TextSpan(text: ' : $formattedDate'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  "\"${item.description}\"",
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.black54, fontStyle: FontStyle.italic, height: 1.5, fontSize: 14),
+                  style: const TextStyle(color: Color(0xFF4B5563), fontSize: 14, fontStyle: FontStyle.italic, height: 1.5),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
                 SizedBox(
-                  width: double.infinity,
+                  width: 140,
                   child: ElevatedButton(
-                    onPressed: () => _showEventDetail(item, formattedDate, imageUrl),
+                    onPressed: () => _showEventDetail(item),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: navy,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    child: const Text("Lihat Detail", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                    child: const Text('Lihat Detail', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -465,125 +369,94 @@ class _JadwalIbadahScreenState extends State<JadwalIbadahScreen> {
     );
   }
 
-  void _showEventDetail(dynamic item, String date, String imageUrl) {
-    final String title = item['judul'] ?? item['title'] ?? item['nama_kegiatan'] ?? '-';
-    final String desc = item['description'] ?? item['deskripsi'] ?? '';
+  void _showEventDetail(ActivityModel item) {
+    String formattedDateFull = "-";
+    try {
+      final date = DateTime.parse(item.date);
+      formattedDateFull = DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(date);
+    } catch (_) {
+      formattedDateFull = item.date;
+    }
 
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.85,
-          maxChildSize: 0.95,
-          minChildSize: 0.5,
-          builder: (context, scrollController) {
-            return Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-              ),
-              child: ListView(
-                controller: scrollController,
-                padding: EdgeInsets.zero,
-                children: [
-                  Stack(
-                    children: [
-                      ClipRRect(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
-                        child: Image.network(
-                          imageUrl,
-                          height: 280,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          errorBuilder: (c, e, s) => Container(
-                            height: 280,
-                            width: double.infinity,
-                            color: Colors.grey[200],
-                            child: const Icon(Icons.broken_image, size: 50, color: Colors.grey)
-                          ),
+      builder: (context) => Dialog(
+        insetPadding: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                      child: Image.network(
+                        item.image != null && item.image!.isNotEmpty
+                            ? (item.image!.startsWith('http') ? item.image! : "http://10.220.181.201:8003/storage/${item.image}")
+                            : "https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800",
+                        height: 250,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    Positioned(
+                      right: 16,
+                      top: 16,
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: CircleAvatar(
+                          backgroundColor: Colors.black.withOpacity(0.3),
+                          child: const Icon(Icons.close, color: Colors.white),
                         ),
                       ),
-                      Positioned(
-                        right: 15,
-                        top: 15,
-                        child: CircleAvatar(
-                          backgroundColor: Colors.black.withOpacity(0.4),
-                          child: IconButton(
-                            icon: const Icon(Icons.close, color: Colors.white, size: 20),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                        ),
+                    ),
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(color: navy.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+                        child: const Text('DETAIL EVENT', style: TextStyle(color: navy, fontSize: 10, fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(item.title, style: const TextStyle(color: navy, fontSize: 28, fontWeight: FontWeight.w900)),
+                      const SizedBox(height: 8),
+                      Text('📅 $formattedDateFull', style: const TextStyle(color: redAccent, fontSize: 16, fontWeight: FontWeight.bold)),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 24),
+                        child: Divider(color: Color(0xFFE2E8F0)),
+                      ),
+                      Text(
+                        item.description,
+                        style: const TextStyle(color: Color(0xFF374151), fontSize: 16, height: 1.8),
                       ),
                     ],
                   ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(25, 25, 25, 40),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                          decoration: BoxDecoration(color: navy.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
-                          child: const Text("DETAIL EVENT", style: TextStyle(color: navy, fontSize: 11, fontWeight: FontWeight.w900)),
-                        ),
-                        const SizedBox(height: 18),
-                        Text(title, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: navy, height: 1.2)),
-                        const SizedBox(height: 12),
-                        Text("📅 $date", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: redAccent)),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 20),
-                          child: Divider(),
-                        ),
-                        Text(
-                          desc,
-                          style: const TextStyle(fontSize: 16, color: Color(0xFF334155), height: 1.8, fontWeight: FontWeight.w400),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildErrorState() {
-    return Center(
-      child: Column(
-        children: [
-          const Icon(Icons.error_outline, color: redAccent, size: 48),
-          const SizedBox(height: 12),
-          Text(errorMsg, style: const TextStyle(color: redAccent, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          TextButton.icon(
-            onPressed: _fetchData,
-            icon: const Icon(Icons.refresh, size: 18),
-            label: const Text("Coba Lagi"),
-            style: TextButton.styleFrom(foregroundColor: navy),
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildEmptyState(String msg) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 20),
-      decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        borderRadius: BorderRadius.circular(15),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        msg,
-        textAlign: TextAlign.center,
-        style: const TextStyle(color: Colors.grey, fontStyle: FontStyle.italic, fontSize: 14, fontWeight: FontWeight.w500),
+  Widget _buildEmptyState(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 60),
+        child: Text(
+          message,
+          style: const TextStyle(color: redAccent, fontWeight: FontWeight.w600),
+        ),
       ),
     );
   }

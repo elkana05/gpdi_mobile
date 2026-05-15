@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/constants/api_constants.dart';
 import 'member_drawer.dart';
@@ -12,16 +13,19 @@ class JadwalRayonScreen extends StatefulWidget {
 }
 
 class _JadwalRayonScreenState extends State<JadwalRayonScreen> {
+  // Mobile consistency colors
   static const Color navy = Color(0xFF05066F);
-  static const Color gold = Color(0xFFFFC326);
-  static const Color softBg = Color(0xFFF8F4FC);
+  static const Color gold = Color(0xFFC5A327);
+  static const Color redAccent = Color(0xFFD71313);
+  static const Color softBg = Color(0xFFF7F4FB);
+  static const Color sectionGray = Color(0xFFEEEDED);
 
   bool isLoading = true;
   String errorMsg = '';
-  Map<String, dynamic> rayonInfo = {};
-  Map<String, dynamic> jadwalAktif = {};
+  Map<String, dynamic>? rayonInfo;
+  Map<String, dynamic>? jadwalAktif;
   List<dynamic> riwayatJadwal = [];
-  String namaKetua = 'Mencari data ketua...';
+  String namaKetua = 'Memuat nama ketua...';
 
   @override
   void initState() {
@@ -37,367 +41,306 @@ class _JadwalRayonScreenState extends State<JadwalRayonScreen> {
     });
 
     try {
-      // Mencoba memanggil endpoint rayon khusus jemaat login
-      final response = await ApiClient().get(ApiConstants.rayonSchedule);
+      // 1. Ambil data Jadwal dan Rayon (Sesuai getJadwalRayonJemaat di React)
+      final response = await ApiClient().get(ApiConstants.rayonSchedules);
+      final data = (response is Map<String, dynamic> && response.containsKey('data'))
+          ? response['data']
+          : response;
 
-      if (response != null) {
-        // Mendukung format { success: true, data: { ... } } atau langsung data
-        final dynamic responseData = (response is Map<String, dynamic> && response.containsKey('data'))
-            ? response['data']
-            : response;
-
-        if (mounted) {
-          setState(() {
-            // Pemetaan data dari response backend
-            rayonInfo = responseData['rayon'] ?? {};
-
-            // Mengambil jadwal aktif (mendatang)
-            jadwalAktif = responseData['jadwal_aktif'] ?? responseData['jadwalAktif'] ?? {};
-
-            // Mengambil riwayat
-            riwayatJadwal = responseData['riwayat'] ?? responseData['history'] ?? [];
-
-            // Mengambil nama ketua rayon
-            final ketua = responseData['ketua_rayon'] ?? responseData['ketua'];
-            namaKetua = ketua?['name'] ?? ketua?['full_name'] ?? "Belum ada Ketua Rayon";
-
-            isLoading = false;
-          });
-        }
-      } else {
-        throw "Data tidak ditemukan.";
-      }
-    } catch (e) {
-      debugPrint("DEBUG ERROR JADWAL RAYON: $e");
       if (mounted) {
         setState(() {
-          // Jika 404, kemungkinan besar user memang belum di-assign ke rayon mana pun di backend
-          if (e.toString().contains('404')) {
-            errorMsg = "Data rayon belum tersedia untuk akun Anda.\nSilakan hubungi pengurus gereja untuk update data rayon.";
-          } else {
-            errorMsg = "Gagal memuat data jadwal rayon.\n${e.toString()}";
+          rayonInfo = data['rayon'];
+          jadwalAktif = data['jadwalAktif'] ?? data['jadwal_aktif'];
+          riwayatJadwal = data['riwayat'] ?? [];
+
+          // Reset nama ketua jika rayon tidak ada
+          if (rayonInfo == null) {
+            namaKetua = "-";
           }
+        });
+
+        // 2. Cari nama Ketua Rayon (Sesuai logic React yang memanggil getAllUsers)
+        if (rayonInfo != null && rayonInfo?['id'] != null) {
+          try {
+            final usersResponse = await ApiClient().get(ApiConstants.allUsers);
+            final List usersList = (usersResponse is Map<String, dynamic> && usersResponse.containsKey('data'))
+                ? usersResponse['data']
+                : usersResponse;
+
+            final ketua = usersList.firstWhere(
+              (u) => u['role'] == 'ketua_rayon' && u['id_rayon'] == rayonInfo!['id'],
+              orElse: () => null,
+            );
+
+            if (mounted) {
+              setState(() {
+                namaKetua = ketua != null ? (ketua['name'] ?? ketua['full_name'] ?? "Ketua Rayon") : "Belum ada Ketua Rayon";
+              });
+            }
+          } catch (e) {
+            if (mounted) setState(() => namaKetua = "Gagal memuat nama");
+          }
+        }
+
+        setState(() => isLoading = false);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          errorMsg = e.toString().contains('404')
+              ? "Data rayon belum tersedia."
+              : "Terjadi kesalahan saat memuat data jadwal rayon.";
           isLoading = false;
         });
       }
     }
   }
 
+  String get _today {
+    return DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(DateTime.now());
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: const MemberDrawer(activeMenu: MemberDrawerMenu.jadwalRayon),
-      backgroundColor: softBg,
-      resizeToAvoidBottomInset: false,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         surfaceTintColor: Colors.white,
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu_rounded, color: navy, size: 28),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
+        iconTheme: const IconThemeData(color: navy),
         title: const Text(
           'Jadwal Rayon',
-          style: TextStyle(color: navy, fontSize: 18, fontWeight: FontWeight.w800),
+          style: TextStyle(color: navy, fontSize: 17, fontWeight: FontWeight.w700),
         ),
         centerTitle: true,
       ),
-      body: Stack(
-        children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              return RefreshIndicator(
-                onRefresh: fetchData,
-                color: navy,
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 140),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Informasi Rayon',
-                            style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: navy),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Detail jadwal ibadah keluarga di lingkungan rayon Anda.',
-                            style: TextStyle(fontSize: 14, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          if (isLoading)
-                            const Padding(
-                              padding: EdgeInsets.only(top: 80),
-                              child: Center(child: CircularProgressIndicator(color: navy)),
-                            )
-                          else if (errorMsg.isNotEmpty)
-                            _buildErrorState()
-                          else if (rayonInfo.isEmpty)
-                            _buildEmptyState()
-                          else ...[
-                            _buildRayonCard(),
-                            const SizedBox(height: 28),
-
-                            // SEKSI JADWAL MENDATANG
-                            const Text(
-                              'Ibadah Mendatang',
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: navy),
-                            ),
-                            const SizedBox(height: 12),
-                            if (jadwalAktif.isNotEmpty)
-                              _buildActiveScheduleCard()
-                            else
-                              _buildNoActiveSchedule(),
-
-                            const SizedBox(height: 28),
-
-                            // SEKSI RIWAYAT
-                            if (riwayatJadwal.isNotEmpty) ...[
-                              const Text(
-                                'Riwayat Ibadah',
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: navy),
-                              ),
-                              const SizedBox(height: 12),
-                              _buildHistoryList(),
-                            ],
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }
-          ),
-          const Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: MemberBottomNavigation(currentIndex: -1),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.only(top: 40),
-        child: Column(
-          children: [
-            const Icon(Icons.cloud_off_rounded, color: Colors.redAccent, size: 64),
-            const SizedBox(height: 16),
-            Text(
-              errorMsg,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.w500)
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: fetchData,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: navy,
-                minimumSize: const Size(180, 48),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
-              ),
-              child: const Text("Coba Lagi", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.only(top: 60),
-        child: Column(
-          children: [
-            Icon(Icons.map_outlined, size: 80, color: Colors.grey.shade300),
-            const SizedBox(height: 16),
-            const Text(
-              "Data Rayon Kosong",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.grey),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              "Anda belum terdaftar dalam rayon aktif.",
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade500),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNoActiveSchedule() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade100),
-      ),
-      child: const Column(
-        children: [
-          Icon(Icons.event_busy, color: Colors.grey, size: 40),
-          SizedBox(height: 12),
-          Text("Belum ada jadwal ibadah mendatang.", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRayonCard() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15)],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: gold.withOpacity(0.15), shape: BoxShape.circle),
-                child: const Icon(Icons.location_on_rounded, color: Color(0xFF866B00), size: 26),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
+      body: RefreshIndicator(
+        onRefresh: fetchData,
+        color: navy,
+        child: isLoading
+          ? const Center(child: CircularProgressIndicator(color: navy))
+          : (rayonInfo == null)
+            ? _buildNotRegisteredState()
+            : SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(24, 28, 24, 100),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      rayonInfo['nama_rayon'] ?? rayonInfo['name'] ?? 'Rayon',
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: navy)
+                    // --- HEADER ---
+                    const Text(
+                      'Jadwal Ibadah Rayon',
+                      style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: navy, height: 1.1),
                     ),
-                    Text(
-                      'Ketua: $namaKetua',
-                      style: const TextStyle(fontSize: 14, color: Colors.grey, fontWeight: FontWeight.w600)
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Informasi jadwal ibadah rayon terbaru',
+                      style: TextStyle(fontSize: 16, color: Colors.grey, fontWeight: FontWeight.w500),
                     ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Tanggal: $_today',
+                      style: const TextStyle(fontSize: 16, color: redAccent, fontWeight: FontWeight.bold),
+                    ),
+
+                    if (errorMsg.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: Text(errorMsg, style: const TextStyle(color: redAccent)),
+                      ),
+
+                    // --- SECTION: INFORMASI RAYON ---
+                    _buildSectionBox(
+                      title: "Informasi Rayon Anda",
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildInfoText("Nama Rayon", rayonInfo?['nama_rayon'] ?? rayonInfo?['namaRayon'] ?? "-"),
+                          _buildInfoText("Ketua Rayon", namaKetua),
+                          _buildInfoText("Keterangan", rayonInfo?['keterangan'] ?? "-"),
+                          const SizedBox(height: 16),
+                          const Text(
+                            '“Informasi jadwal diperbarui secara real-time oleh Ketua Rayon.”',
+                            style: TextStyle(fontSize: 15, color: Color(0xFF6E6E6E), fontStyle: FontStyle.italic, fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // --- SECTION: JADWAL AKTIF ---
+                    if (jadwalAktif != null && jadwalAktif!.isNotEmpty)
+                      _buildSectionBox(
+                        title: "Jadwal Ibadah Aktif",
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildInfoText("Tanggal Ibadah", jadwalAktif?['tanggal_ibadah'] ?? jadwalAktif?['tanggalIbadah'] ?? "-"),
+                            _buildInfoText("Waktu", jadwalAktif?['waktu'] ?? "-"),
+                            _buildInfoText("Lokasi", jadwalAktif?['lokasi'] ?? "-"),
+                            _buildInfoText("Pelayan Firman", jadwalAktif?['pelayan_firman'] ?? jadwalAktif?['pelayanFirman'] ?? "-"),
+                            _buildInfoText("Penanggung Jawab", jadwalAktif?['penanggung_jawab'] ?? jadwalAktif?['penanggungJawab'] ?? "-"),
+                            const SizedBox(height: 20),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                              decoration: BoxDecoration(color: const Color(0xFFE6F8E8), borderRadius: BorderRadius.circular(6)),
+                              child: Text(
+                                'Status: ${jadwalAktif?['status'] ?? "Aktif"}',
+                                style: const TextStyle(color: Color(0xFF29C244), fontSize: 15, fontWeight: FontWeight.w800),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      _buildSectionBox(
+                        title: "Jadwal Ibadah Aktif",
+                        child: const Center(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 20),
+                            child: Text("Belum ada jadwal ibadah aktif untuk rayon Anda saat ini.", textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 16)),
+                          ),
+                        ),
+                      ),
+
+                    // --- SECTION: RIWAYAT ---
+                    const SizedBox(height: 40),
+                    const Text(
+                      "Riwayat Jadwal Sebelumnya",
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: navy),
+                    ),
+                    const SizedBox(height: 16),
+                    if (riwayatJadwal.isEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(32),
+                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFCFCFCF))),
+                        child: const Text("Belum ada riwayat ibadah rayon.", textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500)),
+                      )
+                    else
+                      ...riwayatJadwal.map((item) => _buildHistoryCard(item)),
                   ],
                 ),
               ),
-            ],
-          ),
-          const Padding(padding: EdgeInsets.symmetric(vertical: 20), child: Divider()),
-          const Text('KETERANGAN RAYON', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.grey, letterSpacing: 1.2)),
-          const SizedBox(height: 8),
-          Text(
-            rayonInfo['keterangan'] ?? rayonInfo['description'] ?? 'Informasi rayon aktif.',
-            style: const TextStyle(fontSize: 15, color: navy, height: 1.5)
-          ),
-        ],
       ),
+      bottomNavigationBar: const MemberBottomNavigation(currentIndex: -1),
     );
   }
 
-  Widget _buildActiveScheduleCard() {
+  Widget _buildSectionBox({required String title, required Widget child}) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 28),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [navy, Color(0xFF1E208F)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: navy.withOpacity(0.2), blurRadius: 12, offset: const Offset(0, 6))],
+        color: sectionGray,
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                jadwalAktif['tanggal_ibadah'] ?? jadwalAktif['date'] ?? '-',
-                style: const TextStyle(color: gold, fontWeight: FontWeight.w900, fontSize: 17),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
-                child: Text(
-                  jadwalAktif['waktu'] ?? jadwalAktif['time'] ?? '-',
-                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          _scheduleInfoItem(Icons.home_work_rounded, 'Lokasi', jadwalAktif['lokasi'] ?? jadwalAktif['location']),
-          const SizedBox(height: 12),
-          _scheduleInfoItem(Icons.person_pin_rounded, 'Pelayan', jadwalAktif['pelayan_firman'] ?? jadwalAktif['preacher']),
+          Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: navy)),
+          const SizedBox(height: 16),
+          child,
         ],
       ),
     );
   }
 
-  Widget _scheduleInfoItem(IconData icon, String label, String? value) {
-    return Row(
-      children: [
-        Icon(icon, color: Colors.white70, size: 20),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            value ?? '-',
-            style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500),
-          ),
+  Widget _buildInfoText(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: RichText(
+        text: TextSpan(
+          style: const TextStyle(fontSize: 16, color: Colors.black, height: 1.6, fontWeight: FontWeight.w500),
+          children: [
+            TextSpan(text: "$label: ", style: const TextStyle(fontWeight: FontWeight.w800)),
+            TextSpan(text: value),
+          ],
         ),
-      ],
+      ),
     );
   }
 
-  Widget _buildHistoryList() {
-    return Column(
-      children: riwayatJadwal.map((item) => Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade100),
-        ),
-        child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-          leading: const CircleAvatar(
-            backgroundColor: Color(0xFFF1EFFB),
-            child: Icon(Icons.history_rounded, color: navy, size: 22),
+  Widget _buildHistoryCard(dynamic item) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFCFCFCF)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 2,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(item['pelayan_firman'] ?? item['pelayanFirman'] ?? "Ibadah Rayon", style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17, color: navy)),
+                const SizedBox(height: 8),
+                Text(item['tanggal_ibadah'] ?? item['tanggal'] ?? "-", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(Icons.location_on, size: 14, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Expanded(child: Text(item['lokasi'] ?? "-", style: const TextStyle(fontSize: 13, color: Colors.grey, fontWeight: FontWeight.w500))),
+                  ],
+                ),
+              ],
+            ),
           ),
-          title: Text(item['pelayan_firman'] ?? item['preacher'] ?? '-', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: navy)),
-          subtitle: Text('${item['tanggal_ibadah'] ?? item['date']} | ${item['lokasi'] ?? item['location']}', style: const TextStyle(fontSize: 13, color: Colors.grey)),
-          trailing: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: (item['status']?.toString().toLowerCase() == 'selesai') ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              color: (item['status'] == 'Selesai') ? const Color(0xFFDCFCE7) : const Color(0xFFF3F4F6),
+              borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
-              item['status']?.toString().toUpperCase() ?? '-',
+              item['status'] ?? 'Selesai',
               style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-                color: (item['status']?.toString().toLowerCase() == 'selesai') ? Colors.green : Colors.orange
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: (item['status'] == 'Selesai') ? const Color(0xFF15803D) : const Color(0xFF374151)
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotRegisteredState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFF3F4F6)), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]),
+              child: Column(
+                children: [
+                  const Icon(Icons.warning_amber_rounded, color: Colors.amber, size: 64),
+                  const SizedBox(height: 16),
+                  const Text("Belum Terdaftar di Rayon", textAlign: TextAlign.center, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                  const SizedBox(height: 12),
+                  const Text(
+                    "Akun Anda saat ini belum dihubungkan ke Rayon mana pun. Silakan hubungi Admin atau Pendeta untuk mengatur penempatan Rayon Anda.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Color(0xFF4B5563), fontSize: 15, height: 1.5),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-      )).toList(),
+      ),
     );
   }
 }

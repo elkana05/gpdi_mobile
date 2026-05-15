@@ -63,8 +63,8 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
       String endpoint = '';
       switch (_tabController.index) {
         case 0: endpoint = ApiConstants.announcements; break;
-        case 1: endpoint = ApiConstants.devotionals; break;
-        case 2: endpoint = ApiConstants.gallery; break;
+        case 1: endpoint = ApiConstants.adminRenungan; break;
+        case 2: endpoint = ApiConstants.adminGaleri; break;
       }
 
       final res = await ApiClient().get(endpoint);
@@ -99,6 +99,7 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
         'kategori': item['kategori'] ?? 'Umum',
         'isi': item['isi'] ?? '',
         'status': item['status'] ?? 'Aktif',
+        'foto': item['path_foto'] ?? item['foto'],
       };
     } else {
       _formData = {
@@ -117,34 +118,63 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
     _showFormDialog();
   }
 
-  Future<void> _handleSubmit() async {
+  Future<void> _handleSubmit(StateSetter setModalState) async {
+    if (_isSubmitting) return; // Proteksi double submission
+
     if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
 
-    // Validasi Pengumuman Rayon
-    if (_tabController.index == 0 && _formData['scope'] == 'rayon' && (_formData['id_rayon'] == null || _formData['id_rayon'].isEmpty)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Silakan pilih rayon target!')));
+    if (_tabController.index == 0 && _formData['scope'] == 'rayon' && (_formData['id_rayon'] == null || _formData['id_rayon'].toString().isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Silakan pilih rayon target!'), backgroundColor: Colors.orange));
       return;
     }
 
-    // Validasi Galeri Baru (Wajib Foto)
     if (_tabController.index == 2 && _formData['id'] == null && _fotoBase64 == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Wajib mengunggah foto untuk galeri baru!')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Wajib mengunggah foto untuk galeri baru!'), backgroundColor: Colors.orange));
       return;
     }
 
+    setModalState(() => _isSubmitting = true);
     setState(() => _isSubmitting = true);
+
     try {
       String endpoint = '';
-      switch (_tabController.index) {
-        case 0: endpoint = ApiConstants.announcements; break;
-        case 1: endpoint = ApiConstants.devotionals; break;
-        case 2: endpoint = ApiConstants.gallery; break;
-      }
+      Map<String, dynamic> payload = {};
 
-      final payload = Map<String, dynamic>.from(_formData);
-      if (_fotoBase64 != null) {
-        payload['foto'] = _fotoBase64;
+      switch (_tabController.index) {
+        case 0:
+          endpoint = ApiConstants.announcements;
+          payload = {
+            'judul': _formData['judul'],
+            'isi': _formData['isi'],
+            'scope': _formData['scope'],
+            'status': _formData['status'],
+          };
+          if (_formData['scope'] == 'rayon') {
+            payload['id_rayon'] = int.tryParse(_formData['id_rayon'].toString());
+          }
+          break;
+        case 1:
+          endpoint = ApiConstants.adminRenungan;
+          payload = {
+            'tema': _formData['tema'],
+            'ayat_pokok': _formData['ayat_pokok'],
+            'isi': _formData['isi'],
+            'status': _formData['status'],
+          };
+          break;
+        case 2:
+          endpoint = ApiConstants.adminGaleri;
+          payload = {
+            'judul': _formData['judul'],
+            'kategori': _formData['kategori'],
+            'tanggal_kegiatan': _formData['tanggal_kegiatan'],
+            'deskripsi': _formData['deskripsi'],
+          };
+          if (_fotoBase64 != null) {
+            payload['foto'] = _fotoBase64;
+          }
+          break;
       }
 
       if (_formData['id'] != null) {
@@ -154,16 +184,19 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
       }
 
       if (mounted) {
-        Navigator.pop(context);
-        _fetchData();
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Konten berhasil disimpan')));
+        Navigator.pop(context); // Tutup modal dulu
+        _fetchData(); // Baru refresh data
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Konten berhasil disimpan'), backgroundColor: Colors.green));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e'), backgroundColor: Colors.red));
       }
     } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+      if (mounted) {
+        setModalState(() => _isSubmitting = false);
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 
@@ -186,20 +219,23 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
         String endpoint = '';
         switch (_tabController.index) {
           case 0: endpoint = ApiConstants.announcements; break;
-          case 1: endpoint = ApiConstants.devotionals; break;
-          case 2: endpoint = ApiConstants.gallery; break;
+          case 1: endpoint = ApiConstants.adminRenungan; break;
+          case 2: endpoint = ApiConstants.adminGaleri; break;
         }
         await ApiClient().delete('$endpoint/${item['id']}');
         _fetchData();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Konten berhasil dihapus'), backgroundColor: Colors.green));
+        }
       } catch (e) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Gagal menghapus: $e"), backgroundColor: Colors.red));
       }
     }
   }
 
   Future<void> _pickImage(StateSetter setModalState) async {
     final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery, maxWidth: 1024, imageQuality: 80);
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery, maxWidth: 800, imageQuality: 80);
     if (image != null) {
       final bytes = await image.readAsBytes();
       final String base64Image = 'data:image/${image.path.split('.').last};base64,${base64Encode(bytes)}';
@@ -220,21 +256,39 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
             _formData['id'] == null ? 'Buat ${_getTabTitle()}' : 'Edit ${_getTabTitle()}',
             style: const TextStyle(fontWeight: FontWeight.bold, color: navy),
           ),
-          content: SingleChildScrollView(
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: _buildFormFields(setModalState),
+          actionsAlignment: MainAxisAlignment.end,
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.95,
+            child: SingleChildScrollView(
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: _buildFormFields(setModalState),
+                ),
               ),
             ),
           ),
           actions: [
-            TextButton(onPressed: _isSubmitting ? null : () => Navigator.pop(context), child: const Text('Batal')),
-            ElevatedButton(
-              onPressed: _isSubmitting ? null : _handleSubmit,
-              style: ElevatedButton.styleFrom(backgroundColor: navy),
-              child: Text(_isSubmitting ? 'Menyimpan...' : 'Simpan Data'),
+            TextButton(
+              onPressed: _isSubmitting ? null : () => Navigator.pop(context),
+              child: const Text('Batal', style: TextStyle(color: slate)),
+            ),
+            SizedBox(
+              height: 40,
+              child: ElevatedButton(
+                onPressed: _isSubmitting ? null : () => _handleSubmit(setModalState),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: navy,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  minimumSize: const Size(0, 40),
+                ),
+                child: _isSubmitting
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : const Text('Simpan Data', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
             ),
           ],
         ),
@@ -249,15 +303,18 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
       return [
         DropdownButtonFormField<String>(
           value: _formData['kategori'],
-          decoration: const InputDecoration(labelText: 'Kategori Kegiatan'),
+          decoration: const InputDecoration(labelText: 'Kategori Kegiatan', border: OutlineInputBorder()),
           items: ['Umum', 'Ibadah', 'Pemuda', 'Sekolah Minggu', 'Wanita']
               .map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
           onChanged: (v) => setModalState(() => _formData['kategori'] = v),
         ),
+        const SizedBox(height: 12),
         _buildTextField('Judul Foto/Kegiatan', (v) => _formData['judul'] = v, initialValue: _formData['judul'], required: true),
+        const SizedBox(height: 12),
         _buildTextField('Tanggal Kegiatan', (v) => _formData['tanggal_kegiatan'] = v, initialValue: _formData['tanggal_kegiatan'], hint: 'YYYY-MM-DD', required: true),
         const SizedBox(height: 12),
         _buildImagePicker(setModalState),
+        const SizedBox(height: 12),
         _buildTextField('Deskripsi Singkat', (v) => _formData['deskripsi'] = v, initialValue: _formData['deskripsi'], maxLines: 3),
       ];
     }
@@ -267,27 +324,30 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
         _buildTextField('Judul Pengumuman', (v) => _formData['judul'] = v, initialValue: _formData['judul'], required: true),
       ] else ...[
         _buildTextField('Tema Renungan', (v) => _formData['tema'] = v, initialValue: _formData['tema'], required: true),
+        const SizedBox(height: 12),
         _buildTextField('Ayat Pokok', (v) => _formData['ayat_pokok'] = v, initialValue: _formData['ayat_pokok'], required: true),
       ],
+      const SizedBox(height: 12),
       _buildTextField('Isi Konten', (v) => _formData['isi'] = v, initialValue: _formData['isi'], maxLines: 5, required: true),
-      const SizedBox(height: 8),
+      const SizedBox(height: 12),
       Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             child: DropdownButtonFormField<String>(
               value: _formData['status'],
-              decoration: const InputDecoration(labelText: 'Status'),
-              items: ['Aktif', 'Tidak Aktif'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+              decoration: const InputDecoration(labelText: 'Status', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+              items: ['Aktif', 'Tidak Aktif'].map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 13)))).toList(),
               onChanged: (v) => setModalState(() => _formData['status'] = v),
             ),
           ),
           if (activeIdx == 0) ...[
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
               child: DropdownButtonFormField<String>(
                 value: _formData['scope'],
-                decoration: const InputDecoration(labelText: 'Audiens'),
-                items: ['publik', 'jemaat', 'rayon'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                decoration: const InputDecoration(labelText: 'Audiens', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                items: ['publik', 'jemaat', 'rayon'].map((s) => DropdownMenuItem(value: s, child: Text(s.toUpperCase(), style: const TextStyle(fontSize: 13)))).toList(),
                 onChanged: (v) => setModalState(() => _formData['scope'] = v),
               ),
             ),
@@ -298,9 +358,10 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           value: _rayonList.any((r) => r['id'].toString() == _formData['id_rayon']) ? _formData['id_rayon'] : null,
-          decoration: const InputDecoration(labelText: 'Pilih Rayon'),
-          items: _rayonList.map((r) => DropdownMenuItem(value: r['id'].toString(), child: Text(r['nama_rayon']))).toList(),
+          decoration: const InputDecoration(labelText: 'Pilih Rayon Target', border: OutlineInputBorder()),
+          items: _rayonList.map((r) => DropdownMenuItem(value: r['id'].toString(), child: Text(r['nama_rayon'] ?? r['name'] ?? '-'))).toList(),
           onChanged: (v) => setModalState(() => _formData['id_rayon'] = v),
+          validator: (v) => (v == null || v.isEmpty) ? 'Pilih rayon target' : null,
         ),
       ]
     ];
@@ -309,9 +370,15 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
   Widget _buildTextField(String label, Function(String?) onSaved, {String? initialValue, String? hint, bool required = false, int maxLines = 1}) {
     return TextFormField(
       initialValue: initialValue,
-      decoration: InputDecoration(labelText: label, hintText: hint),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        border: const OutlineInputBorder(),
+        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12)
+      ),
       maxLines: maxLines,
-      validator: required ? (v) => v!.isEmpty ? 'Wajib diisi' : null : null,
+      style: const TextStyle(fontSize: 14),
+      validator: required ? (v) => (v == null || v.isEmpty) ? 'Wajib diisi' : null : null,
       onSaved: onSaved,
     );
   }
@@ -325,7 +392,7 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
         InkWell(
           onTap: () => _pickImage(setModalState),
           child: Container(
-            height: 120,
+            height: 140,
             width: double.infinity,
             decoration: BoxDecoration(
               color: Colors.blue[50],
@@ -337,7 +404,17 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
                     borderRadius: BorderRadius.circular(12),
                     child: Image.memory(base64Decode(_fotoBase64!.split(',').last), fit: BoxFit.cover),
                   )
-                : const Column(
+                : (_formData['id'] != null && _formData['foto'] != null)
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        ApiConstants.getImageUrl(_formData['foto']),
+                        fit: BoxFit.cover,
+                        cacheWidth: 300,
+                        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image)
+                      ),
+                    )
+                  : const Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.add_a_photo_rounded, color: Colors.blue, size: 32),
@@ -346,10 +423,10 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
                   ),
           ),
         ),
-        if (_formData['id'] != null && _fotoBase64 == null)
+        if (_formData['id'] != null)
           const Padding(
             padding: EdgeInsets.only(top: 4),
-            child: Text('*Biarkan kosong jika tidak diganti', style: TextStyle(fontSize: 10, color: slate)),
+            child: Text('*Biarkan kosong jika tidak ingin mengganti foto', style: TextStyle(fontSize: 10, color: slate)),
           ),
       ],
     );
@@ -391,15 +468,26 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Daftar ${_getTabTitle()}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                ElevatedButton.icon(
-                  onPressed: () => _handleOpenModal(),
-                  icon: const Icon(Icons.add, size: 18),
-                  label: Text('Tambah ${_getTabTitle()}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: navy,
-                    minimumSize: const Size(0, 40),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                Expanded(
+                  child: Text(
+                    'Daftar ${_getTabTitle()}',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  height: 40,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _handleOpenModal(),
+                    icon: const Icon(Icons.add, size: 18, color: Colors.white),
+                    label: Text('Tambah ${_getTabTitle()}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: navy,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      minimumSize: const Size(0, 40),
+                    ),
                   ),
                 ),
               ],
@@ -432,7 +520,7 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
   Widget _buildContentList() {
     if (_dataList.isEmpty) return const Center(child: Text('Belum ada data.'));
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       itemCount: _dataList.length,
       itemBuilder: (context, index) {
         final item = _dataList[index];
@@ -442,6 +530,7 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: const Color(0xFFF1F5F9)),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)]
           ),
           child: ListTile(
             contentPadding: const EdgeInsets.all(16),
@@ -449,10 +538,14 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (item['ayat_pokok'] != null) Text(item['ayat_pokok'], style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                if (item['ayat_pokok'] != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(item['ayat_pokok'], style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blue)),
+                  ),
                 const SizedBox(height: 4),
-                Text(item['isi'] ?? '-', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)),
-                const SizedBox(height: 8),
+                Text(item['isi'] ?? '-', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, color: slate)),
+                const SizedBox(height: 12),
                 Row(
                   children: [
                     if (item['scope'] != null)
@@ -467,11 +560,11 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.edit_outlined, color: Colors.blue),
+                  icon: const Icon(Icons.edit_outlined, color: Colors.amber, size: 20),
                   onPressed: () => _handleOpenModal(item),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
                   onPressed: () => _handleDelete(item),
                 ),
               ],
@@ -495,13 +588,15 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
       itemCount: _dataList.length,
       itemBuilder: (context, index) {
         final item = _dataList[index];
-        final imageUrl = item['foto'] != null ? '${ApiConstants.host}${item['foto']}' : null;
+        // Mendukung key 'path_foto' atau 'foto'
+        final imageUrl = ApiConstants.getImageUrl(item['path_foto'] ?? item['foto']);
 
         return Container(
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: const Color(0xFFF1F5F9)),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)]
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -509,8 +604,12 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
               Expanded(
                 child: ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: imageUrl != null
-                      ? Image.network(imageUrl, fit: BoxFit.cover, width: double.infinity,
+                  child: imageUrl.isNotEmpty
+                      ? Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          cacheWidth: 400, // Optimize image memory
                           errorBuilder: (_, __, ___) => Container(color: Colors.grey[100], child: const Icon(Icons.broken_image_outlined)))
                       : Container(color: Colors.grey[100], child: const Icon(Icons.image_outlined)),
                 ),
@@ -529,12 +628,12 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
                       children: [
                         InkWell(
                           onTap: () => _handleOpenModal(item),
-                          child: const Icon(Icons.edit_outlined, size: 18, color: Colors.blue),
+                          child: const Icon(Icons.edit_outlined, size: 18, color: Colors.amber),
                         ),
                         const SizedBox(width: 12),
                         InkWell(
                           onTap: () => _handleDelete(item),
-                          child: const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.redAccent),
+                          child: const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red),
                         ),
                       ],
                     ),
