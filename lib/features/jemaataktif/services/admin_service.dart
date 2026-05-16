@@ -17,6 +17,15 @@ class AdminService {
     await _api.post(ApiConstants.letters, body: body);
   }
 
+  // Admin: Update Status Surat (Approve/Reject)
+  Future<void> updateLetterStatus(int id, String status, {String? note}) async {
+    await _api.post("${ApiConstants.letters}/$id/status", body: {
+      'status': status,
+      'keterangan': note,
+      '_method': 'PUT',
+    });
+  }
+
   // --- Notifikasi ---
 
   Future<List<NotificationModel>> getNotifications() async {

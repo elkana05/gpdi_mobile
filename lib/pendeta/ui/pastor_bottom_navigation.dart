@@ -25,7 +25,7 @@ class PastorBottomNavigation extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.07),
+            color: Colors.black.withOpacity(0.07),
             blurRadius: 24,
             offset: const Offset(0, -8),
           ),

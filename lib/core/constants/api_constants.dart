@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 
 class ApiConstants {
   // Update IP Address berdasarkan ipconfig terbaru
-  static const String _localIp = '10.117.145.201';
+  static const String _localIp = '10.36.73.201';
 
   static final String host = _getHost();
   static final String baseUrl = '$host/api/';

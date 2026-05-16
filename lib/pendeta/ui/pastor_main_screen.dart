@@ -15,7 +15,7 @@ class PastorMainScreen extends StatefulWidget {
 class _PastorMainScreenState extends State<PastorMainScreen> {
   int _currentIndex = 0;
 
-  // Melacak halaman mana saja yang sudah pernah dibuka
+  // Melacak halaman mana saja yang sudah pernah dibuka (kembali ke 4 halaman)
   final List<bool> _pageInitialized = [true, false, false, false];
 
   @override
@@ -25,10 +25,10 @@ class _PastorMainScreenState extends State<PastorMainScreen> {
       body: IndexedStack(
         index: _currentIndex,
         children: [
-          const PastorDashboardScreen(),
-          _pageInitialized[1] ? const PastorJemaatScreen() : const SizedBox.shrink(),
-          _pageInitialized[2] ? const PastorKontenScreen() : const SizedBox.shrink(),
-          _pageInitialized[3] ? const PastorAgendaScreen() : const SizedBox.shrink(),
+          const PastorDashboardScreen(), // 0
+          _pageInitialized[1] ? const PastorJemaatScreen() : const SizedBox.shrink(), // 1
+          _pageInitialized[2] ? const PastorKontenScreen() : const SizedBox.shrink(), // 2
+          _pageInitialized[3] ? const PastorAgendaScreen() : const SizedBox.shrink(), // 3
         ],
       ),
       bottomNavigationBar: PastorBottomNavigation(

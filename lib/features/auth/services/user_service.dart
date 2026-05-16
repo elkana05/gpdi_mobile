@@ -48,9 +48,8 @@ class UserService {
   }
 
   Future<void> deleteFamilyMember(int id) async {
-    await _api.post("${ApiConstants.familyMembers}/$id", body: {
-      '_method': 'DELETE',
-    });
+    // Menggunakan DELETE murni untuk menghindari 404/405
+    await _api.delete("${ApiConstants.familyMembers}/$id");
   }
 
   // 3. Admin/Pastor: Manajemen Jemaat
@@ -61,25 +60,26 @@ class UserService {
   }
 
   Future<void> createJemaat(Map<String, dynamic> data) async {
-    await _api.post(ApiConstants.adminUsers, body: data);
+    // Gunakan manageJemaat (user/jemaat) karena adminUsers hanya support GET
+    await _api.post(ApiConstants.manageJemaat, body: data);
   }
 
   Future<void> updateJemaat(String id, Map<String, dynamic> data) async {
-    await _api.post("${ApiConstants.adminUsers}/$id", body: {
+    // Gunakan manageJemaat (user/jemaat) untuk konsistensi
+    await _api.post("${ApiConstants.manageJemaat}/$id", body: {
       ...data,
       '_method': 'PUT',
     });
   }
 
   Future<void> deleteJemaat(String id) async {
-    await _api.post("${ApiConstants.adminUsers}/$id", body: {
-      '_method': 'DELETE',
-    });
+    // Gunakan manageJemaat (user/jemaat) dengan DELETE murni
+    await _api.delete("${ApiConstants.manageJemaat}/$id");
   }
 
   // Menyesuaikan peran (role) pengguna
   Future<void> updateUserRole(String id, String role) async {
-    await _api.post("${ApiConstants.adminUsers}/$id", body: {
+    await _api.post("${ApiConstants.adminUsers}/$id/role", body: {
       'role': role,
       '_method': 'PUT',
     });

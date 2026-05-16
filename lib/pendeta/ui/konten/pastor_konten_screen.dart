@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../../core/network/api_client.dart';
 import '../../../core/constants/api_constants.dart';
+import '../../../features/jemaatpublik/services/content_service.dart';
+import '../../../features/jemaataktif/services/event_service.dart';
 
 class PastorKontenScreen extends StatefulWidget {
   const PastorKontenScreen({super.key});
@@ -13,6 +14,9 @@ class PastorKontenScreen extends StatefulWidget {
 
 class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final ContentService _contentService = ContentService();
+  final EventService _eventService = EventService();
+
   bool _isLoading = false;
   List<dynamic> _dataList = [];
   List<dynamic> _rayonList = [];
@@ -42,10 +46,10 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
 
   Future<void> _fetchRayons() async {
     try {
-      final res = await ApiClient().get(ApiConstants.rayons);
+      final res = await _eventService.getRayons();
       if (mounted) {
         setState(() {
-          _rayonList = res is List ? res : (res['data'] ?? []);
+          _rayonList = res;
         });
       }
     } catch (e) {
@@ -60,24 +64,23 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
       _errorMsg = '';
     });
     try {
-      String endpoint = '';
+      List<dynamic> data = [];
       switch (_tabController.index) {
-        case 0: endpoint = ApiConstants.announcements; break;
-        case 1: endpoint = ApiConstants.adminRenungan; break;
-        case 2: endpoint = ApiConstants.adminGaleri; break;
+        case 0: data = await _contentService.getAdminAnnouncements(); break;
+        case 1: data = await _contentService.getAdminDevotionals(); break;
+        case 2: data = await _contentService.getAdminGallery(); break;
       }
 
-      final res = await ApiClient().get(endpoint);
       if (mounted) {
         setState(() {
-          _dataList = res is List ? res : (res['data'] ?? []);
+          _dataList = data;
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMsg = "Gagal memuat data konten.";
+          _errorMsg = "Gagal memuat data konten: $e";
           _isLoading = false;
         });
       }
@@ -119,7 +122,7 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
   }
 
   Future<void> _handleSubmit(StateSetter setModalState) async {
-    if (_isSubmitting) return; // Proteksi double submission
+    if (_isSubmitting) return;
 
     if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
@@ -138,12 +141,11 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
     setState(() => _isSubmitting = true);
 
     try {
-      String endpoint = '';
       Map<String, dynamic> payload = {};
+      int? id = _formData['id'];
 
       switch (_tabController.index) {
         case 0:
-          endpoint = ApiConstants.announcements;
           payload = {
             'judul': _formData['judul'],
             'isi': _formData['isi'],
@@ -153,18 +155,18 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
           if (_formData['scope'] == 'rayon') {
             payload['id_rayon'] = int.tryParse(_formData['id_rayon'].toString());
           }
+          await _contentService.saveAnnouncement(payload, id: id);
           break;
         case 1:
-          endpoint = ApiConstants.adminRenungan;
           payload = {
             'tema': _formData['tema'],
             'ayat_pokok': _formData['ayat_pokok'],
             'isi': _formData['isi'],
             'status': _formData['status'],
           };
+          await _contentService.saveDevotional(payload, id: id);
           break;
         case 2:
-          endpoint = ApiConstants.adminGaleri;
           payload = {
             'judul': _formData['judul'],
             'kategori': _formData['kategori'],
@@ -174,18 +176,13 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
           if (_fotoBase64 != null) {
             payload['foto'] = _fotoBase64;
           }
+          await _contentService.saveGallery(payload, id: id);
           break;
       }
 
-      if (_formData['id'] != null) {
-        await ApiClient().post('$endpoint/${_formData['id']}/update', body: payload);
-      } else {
-        await ApiClient().post(endpoint, body: payload);
-      }
-
       if (mounted) {
-        Navigator.pop(context); // Tutup modal dulu
-        _fetchData(); // Baru refresh data
+        Navigator.pop(context);
+        _fetchData();
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Konten berhasil disimpan'), backgroundColor: Colors.green));
       }
     } catch (e) {
@@ -202,6 +199,7 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
 
   Future<void> _handleDelete(dynamic item) async {
     String label = item['judul'] ?? item['tema'] ?? 'konten ini';
+    int id = item['id'];
     bool confirm = await showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -216,13 +214,11 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
 
     if (confirm) {
       try {
-        String endpoint = '';
         switch (_tabController.index) {
-          case 0: endpoint = ApiConstants.announcements; break;
-          case 1: endpoint = ApiConstants.adminRenungan; break;
-          case 2: endpoint = ApiConstants.adminGaleri; break;
+          case 0: await _contentService.deleteAnnouncement(id); break;
+          case 1: await _contentService.deleteDevotional(id); break;
+          case 2: await _contentService.deleteGallery(id); break;
         }
-        await ApiClient().delete('$endpoint/${item['id']}');
         _fetchData();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Konten berhasil dihapus'), backgroundColor: Colors.green));
@@ -588,7 +584,6 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
       itemCount: _dataList.length,
       itemBuilder: (context, index) {
         final item = _dataList[index];
-        // Mendukung key 'path_foto' atau 'foto'
         final imageUrl = ApiConstants.getImageUrl(item['path_foto'] ?? item['foto']);
 
         return Container(
@@ -609,7 +604,7 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
                           imageUrl,
                           fit: BoxFit.cover,
                           width: double.infinity,
-                          cacheWidth: 400, // Optimize image memory
+                          cacheWidth: 400,
                           errorBuilder: (_, __, ___) => Container(color: Colors.grey[100], child: const Icon(Icons.broken_image_outlined)))
                       : Container(color: Colors.grey[100], child: const Icon(Icons.image_outlined)),
                 ),

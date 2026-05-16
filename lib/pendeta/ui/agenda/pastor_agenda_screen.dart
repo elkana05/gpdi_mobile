@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import '../../../core/network/api_client.dart';
 import '../../../core/constants/api_constants.dart';
+import '../../../features/jemaataktif/services/event_service.dart';
 
 class PastorAgendaScreen extends StatefulWidget {
   const PastorAgendaScreen({super.key});
@@ -14,6 +14,8 @@ class PastorAgendaScreen extends StatefulWidget {
 
 class _PastorAgendaScreenState extends State<PastorAgendaScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final EventService _eventService = EventService();
+
   bool _isLoading = false;
   List<dynamic> _dataList = [];
   List<dynamic> _rayonsList = [];
@@ -50,10 +52,10 @@ class _PastorAgendaScreenState extends State<PastorAgendaScreen> with SingleTick
 
   Future<void> _fetchRayonsDropdown() async {
     try {
-      final res = await ApiClient().get(ApiConstants.rayons);
+      final res = await _eventService.getRayons();
       if (mounted) {
         setState(() {
-          _rayonsList = res is List ? res : (res['data'] ?? []);
+          _rayonsList = res;
         });
       }
     } catch (e) {
@@ -68,31 +70,27 @@ class _PastorAgendaScreenState extends State<PastorAgendaScreen> with SingleTick
       _errorMsg = '';
     });
     try {
-      String endpoint = _getEndpoint();
-      final res = await ApiClient().get(endpoint);
+      List<dynamic> data = [];
+      switch (_tabController.index) {
+        case 0: data = await _eventService.getAdminWorship(); break;
+        case 1: data = await _eventService.getAdminActivity(); break;
+        case 2: data = await _eventService.getManageRayonSchedules(); break;
+        case 3: data = await _eventService.getRayons(); break;
+      }
+
       if (mounted) {
         setState(() {
-          _dataList = res is List ? res : (res['data'] ?? []);
+          _dataList = data;
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMsg = e.toString();
+          _errorMsg = "Gagal memuat data: $e";
           _isLoading = false;
         });
       }
-    }
-  }
-
-  String _getEndpoint() {
-    switch (_tabController.index) {
-      case 0: return ApiConstants.adminWorship; // Diubah ke endpoint admin
-      case 1: return ApiConstants.adminActivity; // Diubah ke endpoint admin
-      case 2: return ApiConstants.manageRayonSchedules;
-      case 3: return ApiConstants.rayons;
-      default: return '';
     }
   }
 
@@ -149,20 +147,18 @@ class _PastorAgendaScreenState extends State<PastorAgendaScreen> with SingleTick
 
     setState(() => _isSubmitting = true);
     try {
-      String endpoint = _getEndpoint();
       Map<String, dynamic> payload = Map<String, dynamic>.from(_formData);
+      int? id = _formData['id'];
 
       if (_tabController.index == 1 && _fotoBase64 != null) {
         payload['gambar'] = _fotoBase64;
       }
 
-      if (_formData['id'] != null) {
-        await ApiClient().post('$endpoint/${_formData['id']}/update', body: {
-          ...payload,
-          '_method': 'PUT'
-        });
-      } else {
-        await ApiClient().post(endpoint, body: payload);
+      switch (_tabController.index) {
+        case 0: await _eventService.saveWorship(payload, id: id); break;
+        case 1: await _eventService.saveActivity(payload, id: id); break;
+        case 2: await _eventService.saveRayonSchedule(payload, id: id); break;
+        case 3: await _eventService.saveRayon(payload, id: id); break;
       }
 
       if (mounted) {
@@ -185,6 +181,8 @@ class _PastorAgendaScreenState extends State<PastorAgendaScreen> with SingleTick
 
   Future<void> _handleDelete(dynamic item) async {
     String label = item['title'] ?? item['nama_rayon'] ?? 'data ini';
+    int id = item['id'];
+
     bool confirm = await showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -202,7 +200,12 @@ class _PastorAgendaScreenState extends State<PastorAgendaScreen> with SingleTick
 
     if (confirm) {
       try {
-        await ApiClient().delete('${_getEndpoint()}/${item['id']}');
+        switch (_tabController.index) {
+          case 0: await _eventService.deleteWorship(id); break;
+          case 1: await _eventService.deleteActivity(id); break;
+          case 2: await _eventService.deleteRayonSchedule(id); break;
+          case 3: await _eventService.deleteRayon(id); break;
+        }
         _fetchData();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Data berhasil dihapus'), backgroundColor: Colors.green));
@@ -221,6 +224,21 @@ class _PastorAgendaScreenState extends State<PastorAgendaScreen> with SingleTick
       final String base64Image = 'data:image/${image.path.split('.').last};base64,${base64Encode(bytes)}';
       setModalState(() {
         _fotoBase64 = base64Image;
+      });
+    }
+  }
+
+  Future<void> _selectDate(BuildContext context, StateSetter setModalState) async {
+    DateTime initialDate = DateTime.tryParse(_formData['event_date'] ?? '') ?? DateTime.now();
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null) {
+      setModalState(() {
+        _formData['event_date'] = DateFormat('yyyy-MM-dd').format(picked);
       });
     }
   }
@@ -275,9 +293,14 @@ class _PastorAgendaScreenState extends State<PastorAgendaScreen> with SingleTick
     return [
       if (idx == 2) ...[ // Jadwal Rayon
         DropdownButtonFormField<String>(
+          key: const ValueKey('dropdown_rayon'),
+          isExpanded: true,
           value: _rayonsList.any((r) => r['id'].toString() == _formData['rayon_id'].toString()) ? _formData['rayon_id'].toString() : null,
           decoration: const InputDecoration(labelText: 'Pilih Rayon', border: OutlineInputBorder()),
-          items: _rayonsList.map((r) => DropdownMenuItem(value: r['id'].toString(), child: Text(r['nama_rayon'] ?? '-'))).toList(),
+          items: _rayonsList.map((r) => DropdownMenuItem(
+            value: r['id'].toString(),
+            child: Text(r['nama_rayon'] ?? '-', overflow: TextOverflow.ellipsis)
+          )).toList(),
           onChanged: (v) => setModalState(() => _formData['rayon_id'] = v),
           validator: (v) => (v == null || v.isEmpty) ? 'Pilih rayon target' : null,
         ),
@@ -288,20 +311,30 @@ class _PastorAgendaScreenState extends State<PastorAgendaScreen> with SingleTick
           children: [
             Expanded(
               child: DropdownButtonFormField<String>(
+                key: const ValueKey('dropdown_category'),
+                isExpanded: true,
                 value: _formData['category'],
                 decoration: const InputDecoration(labelText: 'Kategori', border: OutlineInputBorder()),
                 items: ['Ibadah Raya Minggu', 'Ibadah Sekolah Minggu', 'Ibadah Pemuda & Remaja', 'Ibadah Wanita (Pelwap)', 'Doa Malam Jemaat']
-                    .map((c) => DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 11)))).toList(),
+                    .map((c) => DropdownMenuItem(
+                      value: c,
+                      child: Text(c, style: const TextStyle(fontSize: 10), overflow: TextOverflow.ellipsis)
+                    )).toList(),
                 onChanged: (v) => setModalState(() => _formData['category'] = v),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: DropdownButtonFormField<String>(
+                key: const ValueKey('dropdown_day'),
+                isExpanded: true,
                 value: _formData['day_of_week'],
                 decoration: const InputDecoration(labelText: 'Hari', border: OutlineInputBorder()),
                 items: ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
-                    .map((h) => DropdownMenuItem(value: h, child: Text(h, style: const TextStyle(fontSize: 11)))).toList(),
+                    .map((h) => DropdownMenuItem(
+                      value: h,
+                      child: Text(h, style: const TextStyle(fontSize: 10))
+                    )).toList(),
                 onChanged: (v) => setModalState(() => _formData['day_of_week'] = v),
               ),
             ),
@@ -311,19 +344,24 @@ class _PastorAgendaScreenState extends State<PastorAgendaScreen> with SingleTick
       ],
       _buildTextField('Judul / Sesi Acara', (v) => _formData['title'] = v, initialValue: _formData['title'], required: true),
       const SizedBox(height: 12),
-      if (idx == 1) ...[ // Kegiatan (Tambah Upload Gambar)
+      if (idx == 1) ...[ // Kegiatan
         _buildImagePicker(setModalState),
         const SizedBox(height: 12),
       ],
       Row(
         children: [
           Expanded(
-            child: _buildTextField(
-              idx == 0 ? 'Tanggal (Opsional)' : 'Tanggal',
-              (v) => _formData['event_date'] = v,
-              initialValue: _formData['event_date'],
-              hint: 'YYYY-MM-DD',
-              required: idx != 0
+            child: InkWell(
+              onTap: () => _selectDate(context, setModalState),
+              child: IgnorePointer(
+                child: _buildTextField(
+                  idx == 0 ? 'Tanggal (Opsional)' : 'Tanggal',
+                  (v) => _formData['event_date'] = v,
+                  initialValue: _formData['event_date'],
+                  hint: 'Pilih Tanggal',
+                  required: idx != 0
+                ),
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -343,6 +381,8 @@ class _PastorAgendaScreenState extends State<PastorAgendaScreen> with SingleTick
       if (idx != 2) ...[
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
+          key: const ValueKey('dropdown_status'),
+          isExpanded: true,
           value: _formData['status_publish'],
           decoration: const InputDecoration(labelText: 'Status', border: OutlineInputBorder()),
           items: const [
@@ -359,6 +399,7 @@ class _PastorAgendaScreenState extends State<PastorAgendaScreen> with SingleTick
 
   Widget _buildTextField(String label, Function(String?) onSaved, {String? initialValue, String? hint, bool required = false, int maxLines = 1}) {
     return TextFormField(
+      key: ValueKey('input_${_tabController.index}_$label'),
       initialValue: initialValue,
       decoration: InputDecoration(
         labelText: label,
@@ -451,7 +492,8 @@ class _PastorAgendaScreenState extends State<PastorAgendaScreen> with SingleTick
                         child: Padding(
                           padding: const EdgeInsets.all(20),
                           child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisAlignment: Main WITHOUT ANY CHANGE
+                            center,
                             children: [
                               const Icon(Icons.error_outline, color: redAccent, size: 48),
                               const SizedBox(height: 12),

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/network/api_client.dart';
-import '../../../core/constants/api_constants.dart';
 import '../../../features/auth/providers/auth_provider.dart';
+import '../../../features/auth/services/user_service.dart';
+import '../../../features/jemaataktif/services/event_service.dart';
 
 class PastorDashboardScreen extends StatefulWidget {
   const PastorDashboardScreen({super.key});
@@ -13,6 +13,9 @@ class PastorDashboardScreen extends StatefulWidget {
 }
 
 class _PastorDashboardScreenState extends State<PastorDashboardScreen> {
+  final UserService _userService = UserService();
+  final EventService _eventService = EventService();
+
   bool _isLoading = true;
   int _userCount = 0;
   int _jadwalCount = 0;
@@ -29,32 +32,24 @@ class _PastorDashboardScreenState extends State<PastorDashboardScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final apiClient = ApiClient();
-
-      // Menggunakan endpoint admin agar data draft juga terhitung (Sinkron dengan Web)
+      // Menggunakan Service agar lebih terstruktur
       final results = await Future.wait([
-        apiClient.get(ApiConstants.allUsers).catchError((_) => []),
-        apiClient.get(ApiConstants.adminWorship).catchError((_) => []),
-        apiClient.get(ApiConstants.adminActivity).catchError((_) => []),
+        _userService.getAllUsers().catchError((_) => []),
+        _eventService.getAdminWorship().catchError((_) => []),
+        _eventService.getAdminActivity().catchError((_) => []),
       ]);
 
       if (mounted) {
         setState(() {
-          _userCount = _parseCount(results[0]);
-          _jadwalCount = _parseCount(results[1]);
-          _kegiatanCount = _parseCount(results[2]);
+          _userCount = results[0].length;
+          _jadwalCount = results[1].length;
+          _kegiatanCount = results[2].length;
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  int _parseCount(dynamic result) {
-    if (result is List) return result.length;
-    if (result is Map && result['data'] is List) return result['data'].length;
-    return 0;
   }
 
   @override
@@ -90,7 +85,7 @@ class _PastorDashboardScreenState extends State<PastorDashboardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- HEADER DASHBOARD (Identik React) ---
+              // --- HEADER DASHBOARD ---
               const Text(
                 'Dashboard Utama',
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textSlate800, letterSpacing: -0.5),
@@ -111,14 +106,14 @@ class _PastorDashboardScreenState extends State<PastorDashboardScreen> {
               ),
               const SizedBox(height: 32),
 
-              // --- STATS CARDS (Identik React 3 Columns) ---
+              // --- STATS CARDS ---
               _buildStatsCard(
                 label: 'Total Akun User',
                 value: _userCount.toString(),
                 icon: Icons.people_outline,
                 iconColor: Colors.blue,
-                bgColor: const Color(0xFFEFF6FF), // blue-50
-                borderColor: const Color(0xFFDBEAFE), // blue-100
+                bgColor: const Color(0xFFEFF6FF),
+                borderColor: const Color(0xFFDBEAFE),
               ),
               const SizedBox(height: 16),
               _buildStatsCard(
@@ -126,8 +121,8 @@ class _PastorDashboardScreenState extends State<PastorDashboardScreen> {
                 value: _jadwalCount.toString(),
                 icon: Icons.event_available_outlined,
                 iconColor: Colors.amber,
-                bgColor: const Color(0xFFFFFBEB), // amber-50
-                borderColor: const Color(0xFFFEF3C7), // amber-100
+                bgColor: const Color(0xFFFFFBEB),
+                borderColor: const Color(0xFFFEF3C7),
               ),
               const SizedBox(height: 16),
               _buildStatsCard(
@@ -135,13 +130,13 @@ class _PastorDashboardScreenState extends State<PastorDashboardScreen> {
                 value: _kegiatanCount.toString(),
                 icon: Icons.assignment_outlined,
                 iconColor: Colors.purple,
-                bgColor: const Color(0xFFFAF5FF), // purple-50
-                borderColor: const Color(0xFFF3E8FF), // purple-100
+                bgColor: const Color(0xFFFAF5FF),
+                borderColor: const Color(0xFFF3E8FF),
               ),
 
               const SizedBox(height: 32),
 
-              // --- BOTTOM AREA / CALL TO ACTION (Identik React) ---
+              // --- BOTTOM AREA ---
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(32),
@@ -156,7 +151,7 @@ class _PastorDashboardScreenState extends State<PastorDashboardScreen> {
                       width: 64,
                       height: 64,
                       decoration: const BoxDecoration(
-                        color: Color(0xFFF1F5F9), // slate-100
+                        color: Color(0xFFF1F5F9),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(Icons.info_outline, color: Color(0xFF94A3B8), size: 32),
