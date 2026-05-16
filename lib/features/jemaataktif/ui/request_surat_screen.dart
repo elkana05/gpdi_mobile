@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'member_drawer.dart';
 import 'member_bottom_navigation.dart';
 
@@ -14,13 +15,14 @@ class RequestSuratScreen extends StatefulWidget {
 class _RequestSuratScreenState extends State<RequestSuratScreen> {
   // Mobile consistency colors
   static const Color navy = Color(0xFF05066F);
+  static const Color gold = Color(0xFFC5A327);
   static const Color redAccent = Color(0xFFD71313);
-  static const Color softBg = Color(0xFFF7F4FB);
-  static const Color sectionGray = Color(0xFFEEEDED);
+  static const Color softBg = Color(0xFFF8F9FE);
+  static const Color textDark = Color(0xFF1A1A2E);
+  static const Color textGrey = Color(0xFF7A7C92);
 
   final _formKey = GlobalKey<FormState>();
 
-  // Form Controllers (Sesuai React)
   final nameController = TextEditingController();
   final phoneController = TextEditingController();
   final dateController = TextEditingController();
@@ -56,7 +58,16 @@ class _RequestSuratScreenState extends State<RequestSuratScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(primary: navy),
+            colorScheme: const ColorScheme.light(
+              primary: navy,
+              onPrimary: Colors.white,
+              onSurface: textDark,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                textStyle: GoogleFonts.montserrat(fontWeight: FontWeight.bold),
+              ),
+            ),
           ),
           child: child!,
         );
@@ -72,7 +83,12 @@ class _RequestSuratScreenState extends State<RequestSuratScreen> {
   Future<void> _submitToWhatsApp() async {
     if (!_formKey.currentState!.validate() || selectedType == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Mohon lengkapi semua field wajib.")),
+        SnackBar(
+          content: Text("Mohon lengkapi semua field wajib.", style: GoogleFonts.montserrat(fontWeight: FontWeight.w600)),
+          backgroundColor: redAccent,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
       );
       return;
     }
@@ -92,7 +108,12 @@ class _RequestSuratScreenState extends State<RequestSuratScreen> {
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Gagal membuka WhatsApp.")),
+          SnackBar(
+            content: Text("Gagal membuka WhatsApp.", style: GoogleFonts.montserrat(fontWeight: FontWeight.w600)),
+            backgroundColor: redAccent,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
         );
       }
     }
@@ -102,95 +123,100 @@ class _RequestSuratScreenState extends State<RequestSuratScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: const MemberDrawer(activeMenu: MemberDrawerMenu.requestSurat),
-      backgroundColor: Colors.white,
+      backgroundColor: softBg,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        surfaceTintColor: Colors.white,
-        iconTheme: const IconThemeData(color: navy),
-        title: const Text(
-          'Request Surat',
-          style: TextStyle(color: navy, fontSize: 17, fontWeight: FontWeight.w700),
+        scrolledUnderElevation: 0,
+        leading: Builder(
+          builder: (context) {
+            return IconButton(
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: navy.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.menu_rounded, color: navy, size: 22),
+              ),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+            );
+          },
+        ),
+        title: Text(
+          'Layanan Surat',
+          style: GoogleFonts.montserrat(
+            color: navy,
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.5,
+          ),
         ),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(24, 28, 24, 100),
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- HEADER (Identik React) ---
-            const Text(
-              'Request Surat',
-              style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: navy, height: 1.1),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Silakan isi formulir di bawah untuk mengajukan permohonan surat.',
-              style: TextStyle(fontSize: 16, color: Colors.black87, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Setelah dikirim, Anda akan diarahkan otomatis ke WhatsApp Admin Gereja.',
-              style: TextStyle(fontSize: 16, color: Colors.grey, fontWeight: FontWeight.w500),
-            ),
+            _buildHeader(),
+            const SizedBox(height: 32),
 
-            // --- FORM BOX (Identik React bg-EEEDED) ---
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.only(top: 32),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-              decoration: BoxDecoration(
-                color: sectionGray,
-                borderRadius: BorderRadius.circular(12),
-              ),
+            _buildSectionCard(
+              title: "Form Permohonan",
+              subtitle: "Data akan dikirimkan ke WhatsApp Admin",
               child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Form Permohonan Surat',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: navy),
+                    _buildInput("Nama Lengkap", nameController, Icons.person_outline_rounded, "Masukkan nama lengkap"),
+                    _buildInput("No. HP / WhatsApp", phoneController, Icons.phone_android_rounded, "Contoh: 08123456789", keyboardType: TextInputType.phone),
+
+                    Text(
+                      "Jenis Surat",
+                      style: GoogleFonts.montserrat(fontWeight: FontWeight.w700, color: textDark, fontSize: 13),
                     ),
-                    const SizedBox(height: 24),
-
-                    _buildLabel("Nama Lengkap"),
-                    _buildInput(nameController, "Masukkan nama lengkap"),
-
-                    _buildLabel("No. HP / WhatsApp"),
-                    _buildInput(phoneController, "Contoh: 08123456789", keyboardType: TextInputType.phone),
-
-                    _buildLabel("Jenis Surat"),
+                    const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
                       value: selectedType,
-                      decoration: _inputDecoration(),
-                      hint: const Text("Pilih jenis surat", style: TextStyle(fontSize: 14)),
-                      items: suratTypes.map((t) => DropdownMenuItem(value: t, child: Text(t, style: const TextStyle(fontSize: 14)))).toList(),
+                      style: GoogleFonts.montserrat(color: textDark, fontWeight: FontWeight.w600, fontSize: 15),
+                      decoration: _inputDecoration(icon: Icons.description_outlined),
+                      hint: Text("Pilih jenis surat", style: GoogleFonts.montserrat(fontSize: 14, color: textGrey)),
+                      items: suratTypes.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
                       onChanged: (val) => setState(() => selectedType = val),
                     ),
                     const SizedBox(height: 20),
 
-                    _buildLabel("Rencana Tanggal Pengambilan"),
-                    TextFormField(
-                      controller: dateController,
-                      readOnly: true,
-                      onTap: _selectDate,
-                      decoration: _inputDecoration(hint: "Pilih tanggal"),
-                    ),
-                    const SizedBox(height: 20),
+                    _buildInput("Tanggal Pengambilan", dateController, Icons.calendar_today_rounded, "Pilih tanggal", readOnly: true, onTap: _selectDate),
+                    _buildInput("Keperluan Penggunaan", purposeController, Icons.info_outline_rounded, "Contoh: Pendaftaran sekolah"),
+                    _buildInput("Catatan Tambahan (Opsional)", noteController, Icons.note_alt_outlined, "Tuliskan detail tambahan...", maxLines: 3),
 
-                    _buildLabel("Keperluan Penggunaan Surat"),
-                    _buildInput(purposeController, "Contoh: Pendaftaran sekolah"),
-
-                    _buildLabel("Catatan Tambahan (Opsional)"),
-                    _buildInput(noteController, "Tuliskan detail tambahan...", maxLines: 4),
-
-                    const SizedBox(height: 12),
-                    const Text(
-                      '* Pastikan data yang diisi sudah benar. WhatsApp akan terbuka otomatis dengan format pesan yang sudah tersusun.',
-                      style: TextStyle(fontSize: 14, color: Color(0xFF6E6E6E), fontStyle: FontStyle.italic, fontWeight: FontWeight.w500),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: navy.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: navy.withOpacity(0.1)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.info_outline_rounded, color: navy, size: 16),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'WhatsApp akan terbuka otomatis dengan format pesan yang sudah tersusun.',
+                              style: GoogleFonts.montserrat(
+                                fontSize: 12,
+                                color: textGrey,
+                                fontStyle: FontStyle.italic,
+                                fontWeight: FontWeight.w500
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
 
                     const SizedBox(height: 32),
@@ -198,13 +224,14 @@ class _RequestSuratScreenState extends State<RequestSuratScreen> {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: _submitToWhatsApp,
-                        icon: const Icon(Icons.chat_bubble_outline_rounded, size: 20),
-                        label: const Text("Kirim via WhatsApp", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        icon: const Icon(Icons.send_rounded, size: 18),
+                        label: Text("Kirim via WhatsApp", style: GoogleFonts.montserrat(fontSize: 16, fontWeight: FontWeight.w800)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: redAccent,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                          elevation: 0,
                         ),
                       ),
                     ),
@@ -219,39 +246,125 @@ class _RequestSuratScreenState extends State<RequestSuratScreen> {
     );
   }
 
-  Widget _buildLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: navy),
-      ),
+  Widget _buildHeader() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: gold.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            'LAYANAN PERSURATAN',
+            style: GoogleFonts.montserrat(
+              color: gold,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.5,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Permohonan\nSurat Jemaat',
+          style: GoogleFonts.montserrat(
+            color: navy,
+            fontSize: 28,
+            fontWeight: FontWeight.w900,
+            height: 1.1,
+            letterSpacing: -1,
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildInput(TextEditingController controller, String hint, {TextInputType? keyboardType, int maxLines = 1}) {
+  Widget _buildSectionCard({required String title, required String subtitle, required Widget child}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.montserrat(color: textDark, fontSize: 18, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: GoogleFonts.montserrat(color: textGrey, fontSize: 13, fontWeight: FontWeight.w500),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 15,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: child,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInput(String label, TextEditingController controller, IconData icon, String hint, {TextInputType? keyboardType, int maxLines = 1, bool readOnly = false, VoidCallback? onTap}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: keyboardType,
-        maxLines: maxLines,
-        style: const TextStyle(fontSize: 14),
-        decoration: _inputDecoration(hint: hint),
-        validator: (val) => (val == null || val.isEmpty) ? "Field ini wajib diisi" : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.montserrat(fontWeight: FontWeight.w700, color: textDark, fontSize: 13),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: controller,
+            keyboardType: keyboardType,
+            maxLines: maxLines,
+            readOnly: readOnly,
+            onTap: onTap,
+            style: GoogleFonts.montserrat(fontSize: 15, color: textDark, fontWeight: FontWeight.w600),
+            decoration: _inputDecoration(hint: hint, icon: icon),
+            validator: (val) => (val == null || val.isEmpty) ? "Field ini wajib diisi" : null,
+          ),
+        ],
       ),
     );
   }
 
-  InputDecoration _inputDecoration({String? hint}) {
+  InputDecoration _inputDecoration({String? hint, IconData? icon}) {
     return InputDecoration(
       hintText: hint,
+      hintStyle: GoogleFonts.montserrat(color: textGrey, fontSize: 14),
       filled: true,
       fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: const BorderSide(color: Color(0xFFC9C9C9))),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: const BorderSide(color: Color(0xFFC9C9C9))),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: const BorderSide(color: navy, width: 2)),
+      prefixIcon: icon != null ? Icon(icon, color: textGrey, size: 20) : null,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(15),
+        borderSide: BorderSide(color: Colors.grey.withOpacity(0.2)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(15),
+        borderSide: BorderSide(color: Colors.grey.withOpacity(0.2)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(15),
+        borderSide: const BorderSide(color: navy, width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(15),
+        borderSide: const BorderSide(color: redAccent, width: 1),
+      ),
     );
   }
 }

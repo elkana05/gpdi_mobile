@@ -8,12 +8,12 @@ import '../providers/auth_provider.dart';
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
-  static const Color navy = Color(0xFF000066);
+  static const Color navy = Color(0xFF05066F);
   static const Color gold = Color(0xFFC5A327);
   static const Color softBg = Color(0xFFF8F9FE);
   static const Color softInput = Color(0xFFF1F4FF);
-  static const Color textDark = Color(0xFF1E1E2F);
-  static const Color textGrey = Color(0xFF6F7182);
+  static const Color textDark = Color(0xFF1A1A2E);
+  static const Color textGrey = Color(0xFF7A7C92);
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -53,7 +53,6 @@ class _LoginScreenState extends State<LoginScreen> {
           ? user.roles.first.toLowerCase()
           : '';
 
-      // Arahkan berdasarkan role
       if (role.contains('pendeta') || role.contains('admin')) {
         context.go('/pastor-home');
       } else {
@@ -68,7 +67,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: const Color(0xFFD71313),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
     );
   }
 
@@ -78,77 +82,124 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return Scaffold(
       backgroundColor: LoginScreen.softBg,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.white,
-              LoginScreen.softBg,
-              LoginScreen.softBg.withOpacity(0.8),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              children: [
-                const SizedBox(height: 20),
-                _buildHeader(),
-                const SizedBox(height: 40),
-                Text(
-                  'Sistem Informasi\nJemaat',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.playfairDisplay(
-                    color: LoginScreen.navy,
-                    fontSize: 32,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Silahkan Login untuk mengakses layanan\ninternal gereja',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: LoginScreen.textGrey,
-                    fontSize: 14,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                _buildLoginForm(isLoading),
-                const SizedBox(height: 24),
-                _buildInfoBox(),
-                const SizedBox(height: 40),
-                _buildFooter(),
-                const SizedBox(height: 20),
-              ],
+      body: Stack(
+        children: [
+          // Background Decorative Elements
+          Positioned(
+            top: -100,
+            right: -100,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                color: LoginScreen.navy.withOpacity(0.03),
+                shape: BoxShape.circle,
+              ),
             ),
           ),
-        ),
+          SafeArea(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                children: [
+                  const SizedBox(height: 40),
+                  _buildLogoHeader(),
+                  const SizedBox(height: 48),
+                  _buildWelcomeText(),
+                  const SizedBox(height: 40),
+                  _buildLoginForm(isLoading),
+                  const SizedBox(height: 24),
+                  _buildInfoBox(),
+                  const SizedBox(height: 48),
+                  _buildFooter(),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildLogoHeader() {
+    return Column(
       children: [
-        Image.asset(
-          'web/favicon.png',
-          height: 32,
-          errorBuilder: (context, error, stackTrace) =>
-              Icon(Icons.church_outlined, color: LoginScreen.navy, size: 28),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: LoginScreen.navy.withOpacity(0.08),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Image.asset(
+            'web/favicon.png',
+            height: 48,
+            errorBuilder: (context, error, stackTrace) =>
+                const Icon(Icons.church_rounded, color: LoginScreen.navy, size: 40),
+          ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(height: 16),
         Text(
-          'GPDI Sibulele',
-          style: GoogleFonts.merriweather(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
+          'GPdI SIBULELE',
+          style: GoogleFonts.plusJakartaSans(
             color: LoginScreen.navy,
+            fontSize: 14,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 2,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWelcomeText() {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: LoginScreen.gold.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: const Text(
+            'LOGIN INTERNAL',
+            style: TextStyle(
+              color: LoginScreen.gold,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.5
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'Selamat Datang\nKembali',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: LoginScreen.navy,
+            fontSize: 32,
+            fontWeight: FontWeight.w900,
+            height: 1.1,
+            letterSpacing: -1,
+          ),
+        ),
+        const SizedBox(height: 12),
+        const Text(
+          'Silahkan masuk untuk mengakses layanan\nkhusus jemaat dan pengurus',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: LoginScreen.textGrey,
+            fontSize: 14,
+            height: 1.5,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
@@ -157,16 +208,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildLoginForm(bool isLoading) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.7),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white, width: 2),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: LoginScreen.navy.withOpacity(0.05),
+            blurRadius: 25,
+            offset: const Offset(0, 15),
           ),
         ],
       ),
@@ -174,83 +224,94 @@ class _LoginScreenState extends State<LoginScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildLabel('MEMBER ID / PHONE'),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           _buildTextField(
             controller: emailController,
             hint: 'Masukkan ID atau Nomor HP',
-            prefixIcon: Icons.person_outline,
+            prefixIcon: Icons.person_rounded,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           _buildLabel('PASSWORD'),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           _buildTextField(
             controller: passwordController,
-            hint: 'Masukkan Password Anda',
-            prefixIcon: Icons.lock_outline,
+            hint: 'Masukkan Password',
+            prefixIcon: Icons.lock_rounded,
             isPassword: true,
             obscureText: obscurePassword,
             onToggleVisibility: () => setState(() => obscurePassword = !obscurePassword),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: Checkbox(
-                      value: rememberMe,
-                      onChanged: (val) => setState(() => rememberMe = val ?? false),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+              GestureDetector(
+                onTap: () => setState(() => rememberMe = !rememberMe),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: Checkbox(
+                        value: rememberMe,
+                        onChanged: (val) => setState(() => rememberMe = val ?? false),
+                        activeColor: LoginScreen.navy,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Remember Me',
-                    style: TextStyle(color: LoginScreen.textGrey, fontSize: 13),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Ingat Saya',
+                      style: TextStyle(
+                        color: LoginScreen.textGrey,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600
+                      ),
+                    ),
+                  ],
+                ),
               ),
               TextButton(
                 onPressed: () => context.push('/forgot-password'),
                 style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
                 child: const Text(
-                  'Forgot Password?',
-                  style: TextStyle(color: LoginScreen.gold, fontSize: 13, fontWeight: FontWeight.w600),
+                  'Lupa Password?',
+                  style: TextStyle(
+                    color: LoginScreen.gold,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
           SizedBox(
             width: double.infinity,
-            height: 54,
+            height: 58,
             child: ElevatedButton(
               onPressed: isLoading ? null : _handleLogin,
               style: ElevatedButton.styleFrom(
                 backgroundColor: LoginScreen.navy,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 4,
-                shadowColor: LoginScreen.navy.withOpacity(0.5),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 0,
               ),
               child: isLoading
                   ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
                     )
-                  : Row(
+                  : const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text(
-                          'Masuk',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        Text(
+                          'Masuk Sekarang',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 0.5),
                         ),
-                        const SizedBox(width: 8),
-                        const Icon(Icons.logout_rounded, size: 18),
+                        const SizedBox(width: 12),
+                        const Icon(Icons.arrow_forward_rounded, size: 20),
                       ],
                     ),
             ),
@@ -264,10 +325,10 @@ class _LoginScreenState extends State<LoginScreen> {
     return Text(
       text,
       style: const TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w700,
+        fontSize: 10,
+        fontWeight: FontWeight.w900,
         color: LoginScreen.textGrey,
-        letterSpacing: 0.5,
+        letterSpacing: 1.2,
       ),
     );
   }
@@ -282,29 +343,30 @@ class _LoginScreenState extends State<LoginScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: LoginScreen.softInput,
-        borderRadius: BorderRadius.circular(12),
+        color: LoginScreen.softBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.withOpacity(0.1)),
       ),
       child: TextField(
         controller: controller,
         obscureText: obscureText,
-        style: const TextStyle(fontSize: 14),
+        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: LoginScreen.textDark),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
-          prefixIcon: Icon(prefixIcon, color: Colors.grey, size: 20),
+          hintStyle: TextStyle(color: LoginScreen.textGrey.withOpacity(0.5), fontSize: 14, fontWeight: FontWeight.w500),
+          prefixIcon: Icon(prefixIcon, color: LoginScreen.navy.withOpacity(0.5), size: 20),
           suffixIcon: isPassword
               ? IconButton(
                   icon: Icon(
-                    obscureText ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                    color: Colors.grey,
+                    obscureText ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                    color: LoginScreen.textGrey.withOpacity(0.5),
                     size: 20,
                   ),
                   onPressed: onToggleVisibility,
                 )
               : null,
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+          contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
         ),
       ),
     );
@@ -314,46 +376,48 @@ class _LoginScreenState extends State<LoginScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: LoginScreen.softInput.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: LoginScreen.gold.withOpacity(0.2)),
       ),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 4,
-              decoration: BoxDecoration(
-                color: LoginScreen.gold,
-                borderRadius: BorderRadius.circular(2),
-              ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: LoginScreen.gold.withOpacity(0.1),
+              shape: BoxShape.circle,
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: RichText(
-                text: TextSpan(
-                  style: const TextStyle(color: LoginScreen.textDark, fontSize: 13, height: 1.6),
-                  children: [
-                    WidgetSpan(
-                      alignment: PlaceholderAlignment.middle,
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: Icon(Icons.info_outline, color: LoginScreen.gold, size: 16),
-                      ),
-                    ),
-                    const TextSpan(
-                      text: 'Pemberitahuan Internal: ',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const TextSpan(
-                      text: 'Akun hanya tersedia bagi jemaat yang telah terdaftar oleh Admin atau Pendeta. Silahkan hubungi sekretariat jika Anda belum memiliki akses.',
-                    ),
-                  ],
+            child: const Icon(Icons.info_outline_rounded, color: LoginScreen.gold, size: 20),
+          ),
+          const SizedBox(width: 16),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Akses Terbatas',
+                  style: TextStyle(
+                    color: LoginScreen.textDark,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14
+                  ),
                 ),
-              ),
+                SizedBox(height: 4),
+                Text(
+                  'Akun hanya tersedia bagi jemaat yang telah terdaftar. Hubungi sekretariat jika Anda belum memiliki akses.',
+                  style: TextStyle(
+                    color: LoginScreen.textGrey,
+                    fontSize: 12,
+                    height: 1.5,
+                    fontWeight: FontWeight.w500
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -361,31 +425,23 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildFooter() {
     return Column(
       children: [
-        Text(
-          'GPDI Sibulele',
-          style: GoogleFonts.merriweather(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-            color: LoginScreen.navy,
-          ),
-        ),
-        const SizedBox(height: 20),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildFooterLink('PRIVACY POLICY'),
+            _buildFooterLink('Bantuan'),
             _buildFooterDivider(),
-            _buildFooterLink('COMMUNITY GUIDE'),
+            _buildFooterLink('Privasi'),
             _buildFooterDivider(),
-            _buildFooterLink('SUPPORT'),
+            _buildFooterLink('Syarat'),
           ],
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
         Text(
-          '© 2024 GPDI SIBULELE. ALL RIGHTS RESERVED.',
+          '© 2024 GPdI Sibulele. Versi 2.0',
           style: TextStyle(
-            color: Colors.grey.withOpacity(0.8),
-            fontSize: 10,
+            color: LoginScreen.textGrey.withOpacity(0.6),
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
             letterSpacing: 0.5,
           ),
         ),
@@ -398,16 +454,21 @@ class _LoginScreenState extends State<LoginScreen> {
       text,
       style: const TextStyle(
         color: LoginScreen.textGrey,
-        fontSize: 10,
-        fontWeight: FontWeight.w600,
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
       ),
     );
   }
 
   Widget _buildFooterDivider() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Text('|', style: TextStyle(color: Colors.grey.withOpacity(0.3), fontSize: 10)),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      width: 4,
+      height: 4,
+      decoration: BoxDecoration(
+        color: LoginScreen.textGrey.withOpacity(0.3),
+        shape: BoxShape.circle,
+      ),
     );
   }
 }

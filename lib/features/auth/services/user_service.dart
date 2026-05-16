@@ -2,6 +2,7 @@ import '../../../core/network/api_client.dart';
 import '../../../core/constants/api_constants.dart';
 import '../models/user_model.dart';
 import '../models/family_member_model.dart';
+import '../models/rayon_model.dart';
 
 class UserService {
   final ApiClient _api = ApiClient();
@@ -48,7 +49,6 @@ class UserService {
   }
 
   Future<void> deleteFamilyMember(int id) async {
-    // Menggunakan DELETE murni untuk menghindari 404/405
     await _api.delete("${ApiConstants.familyMembers}/$id");
   }
 
@@ -59,13 +59,17 @@ class UserService {
     return data.map((json) => UserModel.fromJson(json)).toList();
   }
 
+  Future<List<RayonModel>> getRayons() async {
+    final response = await _api.get(ApiConstants.adminRayons);
+    final List data = response['data'] ?? response;
+    return data.map((json) => RayonModel.fromJson(json)).toList();
+  }
+
   Future<void> createJemaat(Map<String, dynamic> data) async {
-    // Gunakan manageJemaat (user/jemaat) karena adminUsers hanya support GET
     await _api.post(ApiConstants.manageJemaat, body: data);
   }
 
   Future<void> updateJemaat(String id, Map<String, dynamic> data) async {
-    // Gunakan manageJemaat (user/jemaat) untuk konsistensi
     await _api.post("${ApiConstants.manageJemaat}/$id", body: {
       ...data,
       '_method': 'PUT',
@@ -73,7 +77,6 @@ class UserService {
   }
 
   Future<void> deleteJemaat(String id) async {
-    // Gunakan manageJemaat (user/jemaat) dengan DELETE murni
     await _api.delete("${ApiConstants.manageJemaat}/$id");
   }
 

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../core/network/api_client.dart';
-import '../../../core/constants/api_constants.dart';
+import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../jemaatpublik/providers/content_provider.dart';
+import '../../jemaatpublik/models/content_model.dart';
 import 'member_drawer.dart';
 import 'member_bottom_navigation.dart';
 
@@ -13,33 +15,24 @@ class MemberPengumumanScreen extends StatefulWidget {
 }
 
 class _MemberPengumumanScreenState extends State<MemberPengumumanScreen> {
-  // Theme Colors
   static const Color navy = Color(0xFF05066F);
   static const Color gold = Color(0xFFC5A327);
   static const Color redAccent = Color(0xFFD71313);
-  static const Color softBg = Color(0xFFF7F4FB);
+  static const Color softBg = Color(0xFFF8F9FE);
+  static const Color textDark = Color(0xFF1A1A2E);
+  static const Color textGrey = Color(0xFF7A7C92);
 
   final TextEditingController _searchController = TextEditingController();
-
-  String category = "Semua Pengumuman";
-  String keyword = "";
-  bool loading = true;
-  String errorMsg = '';
-  int? expandedId;
-
-  List<PengumumanItem> pengumumanData = [];
-
-  final List<String> categories = const [
-    "Semua Pengumuman",
-    "Publik",
-    "Internal Jemaat",
-    "Rayon",
-  ];
+  String _keyword = "";
 
   @override
   void initState() {
     super.initState();
-    fetchPengumuman();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Provider.of<ContentProvider>(context, listen: false).fetchAnnouncements();
+      }
+    });
   }
 
   @override
@@ -48,298 +41,290 @@ class _MemberPengumumanScreenState extends State<MemberPengumumanScreen> {
     super.dispose();
   }
 
-  Future<void> fetchPengumuman() async {
-    if (!mounted) return;
-    setState(() {
-      loading = true;
-      errorMsg = '';
-    });
+  String _formatTanggal(String dateString) {
     try {
-      final response = await ApiClient().get(ApiConstants.announcements);
-      final List<dynamic> res = response is List ? response : (response['data'] ?? []);
-
-      if (mounted) {
-        setState(() {
-          // Filter status "Aktif" & Reverse (Newest first) sesuai React
-          pengumumanData = res
-              .where((item) => item['status'] == "Aktif")
-              .map((item) => PengumumanItem.fromJson(item))
-              .toList()
-              .reversed
-              .toList();
-          loading = false;
-        });
-      }
+      final date = DateTime.parse(dateString);
+      return DateFormat('d MMMM yyyy', 'id_ID').format(date);
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          errorMsg = "Gagal memuat pengumuman.";
-          loading = false;
-        });
-      }
+      return dateString;
     }
   }
 
-  List<PengumumanItem> get filteredData {
-    return pengumumanData.where((item) {
-      // Logic Kategori sesuai React
-      bool matchCategory = category == "Semua Pengumuman" ||
-          item.category.toLowerCase() == category.toLowerCase();
+  String _getBadgeLabel(String? category) {
+    final cat = category?.toLowerCase() ?? '';
+    if (cat == 'publik') return "PENGUMUMAN PUBLIK";
+    if (cat == 'jemaat') return "INTERNAL JEMAAT";
+    if (cat == 'rayon') return "KHUSUS RAYON";
+    return "WARTA JEMAAT";
+  }
 
-      // Logic Search sesuai React
-      final q = keyword.toLowerCase().trim();
-      final matchSearch = q.isEmpty ||
-          item.title.toLowerCase().contains(q) ||
-          item.summary.toLowerCase().contains(q);
-
-      return matchCategory && matchSearch;
+  List<AnnouncementModel> _getFilteredAnnouncements(List<AnnouncementModel> items) {
+    if (_keyword.isEmpty) return items;
+    return items.where((item) {
+      return item.title.toLowerCase().contains(_keyword.toLowerCase()) ||
+          item.content.toLowerCase().contains(_keyword.toLowerCase());
     }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       drawer: const MemberDrawer(activeMenu: MemberDrawerMenu.pengumuman),
+      backgroundColor: softBg,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        surfaceTintColor: Colors.white,
-        iconTheme: const IconThemeData(color: navy),
-        title: const Text(
-          "Pengumuman",
-          style: TextStyle(color: navy, fontSize: 17, fontWeight: FontWeight.w700),
+        scrolledUnderElevation: 0,
+        leading: Builder(
+          builder: (context) {
+            return IconButton(
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: navy.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.menu_rounded, color: navy, size: 22),
+              ),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+            );
+          },
+        ),
+        title: Text(
+          'Warta Jemaat',
+          style: GoogleFonts.montserrat(
+            color: navy,
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.5,
+          ),
         ),
         centerTitle: true,
       ),
-      body: RefreshIndicator(
-        onRefresh: fetchPengumuman,
-        color: navy,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            children: [
-              // ══ HEADING (Identik React) ══
-              _buildHeader(),
+      body: Consumer<ContentProvider>(
+        builder: (context, provider, child) {
+          final filteredItems = _getFilteredAnnouncements(provider.announcements);
 
-              // ══ HERO BANNER (Identik React) ══
-              _buildHeroBanner(),
-
-              // ══ SEARCH & FILTER FORM ══
-              _buildSearchFilter(),
-
-              // ══ LIST PENGUMUMAN ══
-              if (loading)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 60),
-                  child: CircularProgressIndicator(color: navy),
-                )
-              else if (errorMsg.isNotEmpty)
-                _buildErrorState()
-              else if (filteredData.isEmpty)
-                _buildEmptyState()
-              else
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: filteredData.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 20),
-                    itemBuilder: (context, index) => _buildAnnouncementCard(filteredData[index]),
+          return RefreshIndicator(
+            onRefresh: () => provider.fetchAnnouncements(),
+            color: navy,
+            child: CustomScrollView(
+              physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildHeader(),
+                        const SizedBox(height: 24),
+                        const _QuoteCard(),
+                        const SizedBox(height: 32),
+                        _buildSearchField(),
+                        const SizedBox(height: 32),
+                        _buildSectionHeader('Info & Pengumuman', 'Warta terbaru dari gereja kami'),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
                   ),
                 ),
-
-              const SizedBox(height: 100),
-            ],
-          ),
-        ),
+                if (provider.isLoading)
+                  const SliverFillRemaining(
+                    child: Center(child: CircularProgressIndicator(color: navy)),
+                  )
+                else if (filteredItems.isEmpty)
+                  SliverFillRemaining(
+                    child: _buildEmptyState(_keyword.isEmpty ? "Belum Ada Pengumuman" : "Pencarian Tidak Ditemukan"),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final item = filteredItems[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 20),
+                            child: _buildAnnouncementCard(item),
+                          );
+                        },
+                        childCount: filteredItems.length,
+                      ),
+                    ),
+                  ),
+                const SliverToBoxAdapter(child: SizedBox(height: 100)),
+              ],
+            ),
+          );
+        },
       ),
       bottomNavigationBar: const MemberBottomNavigation(currentIndex: -1),
     );
   }
 
   Widget _buildHeader() {
-    return const Padding(
-      padding: EdgeInsets.fromLTRB(20, 32, 20, 16),
-      child: Column(
-        children: [
-          Text(
-            'Pengumuman Gereja',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: navy),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: gold.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
           ),
-          SizedBox(height: 8),
-          Text(
-            'Informasi Resmi untuk Jemaat',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16, color: Color(0xFF374151), fontWeight: FontWeight.w500),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeroBanner() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-      child: Container(
-        height: 220,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: navy,
-          borderRadius: BorderRadius.circular(20),
-          image: DecorationImage(
-            image: const NetworkImage(
-              "https://images.unsplash.com/photo-1438232992991-995b7058bbb3?q=80&w=2073&auto=format&fit=crop",
+          child: Text(
+            'WARTA & INFO',
+            style: GoogleFonts.montserrat(
+              color: gold,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.5,
             ),
-            fit: BoxFit.cover,
-            colorFilter: ColorFilter.mode(navy.withOpacity(0.6), BlendMode.darken),
           ),
         ),
-        child: const Padding(
-          padding: EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                "\"Memperhatikan setiap informasi adalah bentuk partisipasi aktif kita dalam persekutuan.\"",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontStyle: FontStyle.italic,
-                  height: 1.4,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+        const SizedBox(height: 12),
+        Text(
+          'Pengumuman\nKhusus Jemaat',
+          style: GoogleFonts.montserrat(
+            color: navy,
+            fontSize: 28,
+            fontWeight: FontWeight.w900,
+            height: 1.1,
+            letterSpacing: -1,
           ),
         ),
-      ),
+      ],
     );
   }
 
-  Widget _buildSearchFilter() {
+  Widget _buildSearchField() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10)],
-      ),
-      child: Column(
-        children: [
-          // Dropdown Kategori
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFD1D5DB)),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: category,
-                isExpanded: true,
-                onChanged: (v) => setState(() {
-                  category = v!;
-                  expandedId = null;
-                }),
-                items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 14)))).toList(),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          // Search Field
-          TextField(
-            controller: _searchController,
-            onChanged: (v) => setState(() {
-              keyword = v;
-              expandedId = null;
-            }),
-            decoration: InputDecoration(
-              hintText: "Cari kata kunci pengumuman...",
-              hintStyle: const TextStyle(fontSize: 14),
-              prefixIcon: const Icon(Icons.search, size: 20),
-              contentPadding: const EdgeInsets.symmetric(vertical: 10),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFD1D5DB))),
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFD1D5DB))),
-              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: navy)),
-            ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
           ),
         ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (value) => setState(() => _keyword = value),
+        decoration: InputDecoration(
+          hintText: "Cari warta...",
+          hintStyle: GoogleFonts.montserrat(color: textGrey, fontSize: 14),
+          prefixIcon: const Icon(Icons.search_rounded, color: textGrey),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+        ),
       ),
     );
   }
 
-  Widget _buildAnnouncementCard(PengumumanItem item) {
-    final bool isExpanded = expandedId == item.id;
+  Widget _buildSectionHeader(String title, String subtitle) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.montserrat(
+            color: textDark,
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: GoogleFonts.montserrat(
+            color: textGrey,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAnnouncementCard(AnnouncementModel item) {
     return Container(
-      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 5))],
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            item.title,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: navy, height: 1.2),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: redAccent.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  item.category.toUpperCase(),
-                  style: const TextStyle(color: redAccent, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text("📅 ${item.publishedAt}", style: const TextStyle(color: Color(0xFF6B7280), fontSize: 12, fontWeight: FontWeight.w500)),
-            ],
-          ),
-          const SizedBox(height: 16),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(color: const Color(0xFFF9FAFB), borderRadius: BorderRadius.circular(6)),
-            child: Text("Oleh: ${item.author}", style: const TextStyle(color: Color(0xFF4B5563), fontSize: 12, fontWeight: FontWeight.bold)),
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: redAccent.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    _getBadgeLabel(item.category),
+                    style: GoogleFonts.montserrat(
+                      color: redAccent,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+                Text(
+                  _formatTanggal(item.date),
+                  style: GoogleFonts.montserrat(
+                    color: textGrey,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 20),
-          const Divider(height: 1),
-          const SizedBox(height: 20),
-          Text(
-            item.summary,
-            maxLines: isExpanded ? null : 3,
-            overflow: isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
-            style: const TextStyle(color: Color(0xFF374151), height: 1.6, fontSize: 15),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () => setState(() => expandedId = isExpanded ? null : item.id),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: navy,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-              child: Text(
-                isExpanded ? "Tutup Pengumuman" : "Baca Selengkapnya",
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.title,
+                  style: GoogleFonts.montserrat(
+                    color: navy,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    height: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                const SizedBox(height: 12),
+                Text(
+                  item.content,
+                  style: GoogleFonts.montserrat(
+                    color: const Color(0xFF4B5563),
+                    fontSize: 14,
+                    height: 1.6,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -347,24 +332,38 @@ class _MemberPengumumanScreenState extends State<MemberPengumumanScreen> {
     );
   }
 
-  Widget _buildErrorState() {
+  Widget _buildEmptyState(String message) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 80),
-        child: Text(errorMsg, style: const TextStyle(color: redAccent, fontWeight: FontWeight.bold)),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 80),
+        padding: const EdgeInsets.symmetric(horizontal: 40),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.announcement_outlined, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text("Tidak ada pengumuman yang sesuai pencarian.", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500)),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20),
+                ],
+              ),
+              child: Icon(Icons.campaign_rounded, color: textGrey.withOpacity(0.3), size: 64),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              message,
+              style: GoogleFonts.montserrat(color: textDark, fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            if (_keyword.isEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  "Warta jemaat terbaru akan muncul di sini segera setelah tersedia.",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.montserrat(color: textGrey, fontSize: 14, fontWeight: FontWeight.w500),
+                ),
+              ),
           ],
         ),
       ),
@@ -372,46 +371,73 @@ class _MemberPengumumanScreenState extends State<MemberPengumumanScreen> {
   }
 }
 
-class PengumumanItem {
-  final int id;
-  final String title;
-  final String category;
-  final String publishedAt;
-  final String summary;
-  final String author;
+class _QuoteCard extends StatelessWidget {
+  const _QuoteCard();
 
-  PengumumanItem({
-    required this.id,
-    required this.title,
-    required this.category,
-    required this.publishedAt,
-    required this.summary,
-    this.author = "Pengurus Gereja",
-  });
-
-  factory PengumumanItem.fromJson(Map<String, dynamic> json) {
-    String catLabel = "Umum";
-    final scope = json['scope']?.toString().toLowerCase();
-    if (scope == "publik") catLabel = "Publik";
-    if (scope == "jemaat") catLabel = "Internal Jemaat";
-    if (scope == "rayon") catLabel = "Rayon";
-
-    return PengumumanItem(
-      id: json['id'] ?? 0,
-      title: json['judul'] ?? json['title'] ?? 'Tanpa Judul',
-      category: catLabel,
-      publishedAt: formatTanggalIndonesia(json['created_at']),
-      summary: json['isi'] ?? json['content'] ?? '',
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF05066F), Color(0xFF1A1B8C)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF05066F).withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -20,
+            bottom: -20,
+            child: Icon(
+              Icons.auto_awesome,
+              size: 100,
+              color: Colors.white.withOpacity(0.05),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                Icon(Icons.format_quote_rounded, color: Colors.white.withOpacity(0.5), size: 32),
+                const SizedBox(height: 12),
+                Text(
+                  "Sebab Aku ini mengetahui rancangan-rancangan apa yang ada pada-Ku mengenai kamu, demikianlah firman TUHAN, yaitu rancangan damai sejahtera...",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.montserrat(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontStyle: FontStyle.italic,
+                    height: 1.6,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    "— Yeremia 29:11",
+                    style: GoogleFonts.montserrat(color: const Color(0xFFFFD34E), fontSize: 12, fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
-  }
-}
-
-String formatTanggalIndonesia(dynamic value) {
-  if (value == null) return "-";
-  try {
-    final date = DateTime.parse(value.toString());
-    return DateFormat('d MMMM yyyy', 'id_ID').format(date);
-  } catch (_) {
-    return value.toString();
   }
 }

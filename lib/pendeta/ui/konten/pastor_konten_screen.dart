@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../features/jemaatpublik/services/content_service.dart';
 import '../../../features/jemaataktif/services/event_service.dart';
@@ -20,49 +22,48 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
   bool _isLoading = false;
   List<dynamic> _dataList = [];
   List<dynamic> _rayonList = [];
-  String _errorMsg = '';
-
-  // Form States
   bool _isSubmitting = false;
   final _formKey = GlobalKey<FormState>();
   Map<String, dynamic> _formData = {};
   String? _fotoBase64;
 
+  final TextEditingController _dateController = TextEditingController();
+
   static const Color navy = Color(0xFF05066F);
-  static const Color slate = Color(0xFF64748B);
+  static const Color gold = Color(0xFFC5A327);
+  static const Color softBg = Color(0xFFF8F9FE);
+  static const Color textGrey = Color(0xFF7A7C92);
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() {
-      if (!_tabController.indexIsChanging) {
-        _fetchData();
-      }
+      if (!_tabController.indexIsChanging) _fetchData();
     });
     _fetchRayons();
     _fetchData();
   }
 
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _dateController.dispose();
+    super.dispose();
+  }
+
   Future<void> _fetchRayons() async {
     try {
       final res = await _eventService.getRayons();
-      if (mounted) {
-        setState(() {
-          _rayonList = res;
-        });
-      }
+      if (mounted) setState(() => _rayonList = res);
     } catch (e) {
-      debugPrint("Gagal memuat rayon: $e");
+      debugPrint("Gagal muat rayon: $e");
     }
   }
 
   Future<void> _fetchData() async {
     if (!mounted) return;
-    setState(() {
-      _isLoading = true;
-      _errorMsg = '';
-    });
+    setState(() => _isLoading = true);
     try {
       List<dynamic> data = [];
       switch (_tabController.index) {
@@ -70,20 +71,9 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
         case 1: data = await _contentService.getAdminDevotionals(); break;
         case 2: data = await _contentService.getAdminGallery(); break;
       }
-
-      if (mounted) {
-        setState(() {
-          _dataList = data;
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() { _dataList = data; _isLoading = false; });
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMsg = "Gagal memuat data konten: $e";
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -98,120 +88,371 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
         'tema': item['tema'] ?? '',
         'ayat_pokok': item['ayat_pokok'] ?? '',
         'deskripsi': item['deskripsi'] ?? '',
-        'tanggal_kegiatan': item['tanggal_kegiatan']?.toString().split('T')[0] ?? '',
+        'tanggal_kegiatan': item['tanggal_kegiatan'] != null ? item['tanggal_kegiatan'].toString().split('T')[0] : '',
         'kategori': item['kategori'] ?? 'Umum',
         'isi': item['isi'] ?? '',
         'status': item['status'] ?? 'Aktif',
-        'foto': item['path_foto'] ?? item['foto'],
       };
     } else {
       _formData = {
-        'judul': '',
-        'scope': 'publik',
-        'id_rayon': '',
-        'tema': '',
-        'ayat_pokok': '',
-        'deskripsi': '',
-        'tanggal_kegiatan': '',
-        'kategori': 'Umum',
-        'isi': '',
-        'status': 'Aktif',
+        'judul': '', 'scope': 'publik', 'id_rayon': '', 'tema': '', 'ayat_pokok': '',
+        'deskripsi': '', 'tanggal_kegiatan': '', 'kategori': 'Umum', 'isi': '', 'status': 'Aktif'
       };
     }
+    _dateController.text = _formData['tanggal_kegiatan'] ?? '';
     _showFormDialog();
   }
 
-  Future<void> _handleSubmit(StateSetter setModalState) async {
-    if (_isSubmitting) return;
-
-    if (!_formKey.currentState!.validate()) return;
-    _formKey.currentState!.save();
-
-    if (_tabController.index == 0 && _formData['scope'] == 'rayon' && (_formData['id_rayon'] == null || _formData['id_rayon'].toString().isEmpty)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Silakan pilih rayon target!'), backgroundColor: Colors.orange));
-      return;
-    }
-
-    if (_tabController.index == 2 && _formData['id'] == null && _fotoBase64 == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Wajib mengunggah foto untuk galeri baru!'), backgroundColor: Colors.orange));
-      return;
-    }
-
-    setModalState(() => _isSubmitting = true);
-    setState(() => _isSubmitting = true);
-
-    try {
-      Map<String, dynamic> payload = {};
-      int? id = _formData['id'];
-
-      switch (_tabController.index) {
-        case 0:
-          payload = {
-            'judul': _formData['judul'],
-            'isi': _formData['isi'],
-            'scope': _formData['scope'],
-            'status': _formData['status'],
-          };
-          if (_formData['scope'] == 'rayon') {
-            payload['id_rayon'] = int.tryParse(_formData['id_rayon'].toString());
-          }
-          await _contentService.saveAnnouncement(payload, id: id);
-          break;
-        case 1:
-          payload = {
-            'tema': _formData['tema'],
-            'ayat_pokok': _formData['ayat_pokok'],
-            'isi': _formData['isi'],
-            'status': _formData['status'],
-          };
-          await _contentService.saveDevotional(payload, id: id);
-          break;
-        case 2:
-          payload = {
-            'judul': _formData['judul'],
-            'kategori': _formData['kategori'],
-            'tanggal_kegiatan': _formData['tanggal_kegiatan'],
-            'deskripsi': _formData['deskripsi'],
-          };
-          if (_fotoBase64 != null) {
-            payload['foto'] = _fotoBase64;
-          }
-          await _contentService.saveGallery(payload, id: id);
-          break;
-      }
-
-      if (mounted) {
-        Navigator.pop(context);
-        _fetchData();
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Konten berhasil disimpan'), backgroundColor: Colors.green));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e'), backgroundColor: Colors.red));
-      }
-    } finally {
-      if (mounted) {
-        setModalState(() => _isSubmitting = false);
-        setState(() => _isSubmitting = false);
-      }
+  Future<void> _selectDate(BuildContext context, StateSetter setModalState) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null) {
+      setModalState(() {
+        _dateController.text = DateFormat('yyyy-MM-dd').format(picked);
+        _formData['tanggal_kegiatan'] = _dateController.text;
+      });
     }
   }
 
+  Future<void> _pickImage(StateSetter setModalState) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    if (pickedFile != null) {
+      final bytes = await pickedFile.readAsBytes();
+      setModalState(() {
+        _fotoBase64 = base64Encode(bytes);
+      });
+    }
+  }
+
+  Future<void> _handleSubmit() async {
+    if (!_formKey.currentState!.validate()) return;
+    _formKey.currentState!.save();
+
+    if (_tabController.index == 0 && _formData['scope'] == 'rayon' && (_formData['id_rayon'] == null || _formData['id_rayon'].isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pilih rayon target!')));
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    try {
+      Map<String, dynamic> payload = Map<String, dynamic>.from(_formData);
+      int? id = _formData['id'];
+
+      if (_tabController.index == 2) {
+        if (_fotoBase64 != null) payload['foto'] = _fotoBase64;
+        if (id == null && _fotoBase64 == null) throw "Wajib mengunggah foto untuk galeri baru!";
+      }
+
+      switch (_tabController.index) {
+        case 0: await _contentService.saveAnnouncement(payload, id: id); break;
+        case 1: await _contentService.saveDevotional(payload, id: id); break;
+        case 2: await _contentService.saveGallery(payload, id: id); break;
+      }
+      if (mounted) { Navigator.pop(context); _fetchData(); }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal: $e')));
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  void _showFormDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Form ${_getTabTitle()}', style: GoogleFonts.montserrat(fontSize: 18, fontWeight: FontWeight.bold, color: navy)),
+                  const SizedBox(height: 20),
+                  ..._buildFormFields(setModalState),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _isSubmitting ? null : _handleSubmit,
+                      style: ElevatedButton.styleFrom(backgroundColor: navy, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                      child: _isSubmitting ? const CircularProgressIndicator(color: Colors.white) : const Text('SIMPAN KONTEN', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal', style: TextStyle(color: textGrey))),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildFormFields(StateSetter setModalState) {
+    int idx = _tabController.index;
+    if (idx == 2) { // GALERI
+      return [
+        _buildDropdown('Kategori Kegiatan', _formData['kategori'], ['Umum', 'Ibadah', 'Pemuda', 'Sekolah Minggu', 'Wanita'], (v) => setModalState(() => _formData['kategori'] = v)),
+        _buildInput('Judul Foto', (v) => _formData['judul'] = v, Icons.title, initialValue: _formData['judul'], required: true),
+        _buildPickerInput('Tanggal Kegiatan', _dateController, () => _selectDate(context, setModalState)),
+        const SizedBox(height: 12),
+        _buildImagePicker(setModalState),
+        _buildInput('Deskripsi Singkat', (v) => _formData['deskripsi'] = v, Icons.description, initialValue: _formData['deskripsi'], maxLines: 3),
+      ];
+    }
+    return [
+      if (idx == 0) ...[
+        _buildInput('Judul Pengumuman', (v) => _formData['judul'] = v, Icons.campaign, initialValue: _formData['judul'], required: true),
+        Row(
+          children: [
+            Expanded(child: _buildDropdown('Target Audiens', _formData['scope'], ['publik', 'jemaat', 'rayon'], (v) => setModalState(() => _formData['scope'] = v))),
+            if (_formData['scope'] == 'rayon') ...[
+              const SizedBox(width: 12),
+              Expanded(child: _buildDropdown('Pilih Rayon', _formData['id_rayon'], _rayonList.map((e) => e['id'].toString()).toList(), (v) => setModalState(() => _formData['id_rayon'] = v), labels: _rayonList.map((e) => e['nama_rayon'].toString()).toList())),
+            ]
+          ],
+        ),
+      ] else ...[
+        _buildInput('Tema Renungan', (v) => _formData['tema'] = v, Icons.book, initialValue: _formData['tema'], required: true),
+        _buildInput('Ayat Pokok', (v) => _formData['ayat_pokok'] = v, Icons.menu_book, initialValue: _formData['ayat_pokok'], required: true),
+      ],
+      _buildInput('Isi Konten', (v) => _formData['isi'] = v, Icons.article, initialValue: _formData['isi'], maxLines: 5, required: true),
+      _buildDropdown('Status Visibilitas', _formData['status'], ['Aktif', 'Tidak Aktif'], (v) => setModalState(() => _formData['status'] = v)),
+    ];
+  }
+
+  Widget _buildInput(String label, Function(String?) onSaved, IconData icon, {String? initialValue, bool required = false, int maxLines = 1}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: TextFormField(
+        initialValue: initialValue,
+        maxLines: maxLines,
+        decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon, color: navy), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+        validator: required ? (v) => (v == null || v.isEmpty) ? 'Wajib diisi' : null : null,
+        onSaved: onSaved,
+      ),
+    );
+  }
+
+  Widget _buildPickerInput(String label, TextEditingController controller, VoidCallback onTap) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: TextFormField(
+        controller: controller,
+        readOnly: true,
+        onTap: onTap,
+        decoration: InputDecoration(labelText: label, prefixIcon: const Icon(Icons.calendar_today, color: navy), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+        validator: (v) => (v == null || v.isEmpty) ? 'Wajib' : null,
+      ),
+    );
+  }
+
+  Widget _buildDropdown(String label, String? value, List<String> items, Function(String?) onChanged, {List<String>? labels}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: DropdownButtonFormField<String>(
+        value: (value == null || value.isEmpty || !items.contains(value)) ? null : value,
+        isExpanded: true,
+        decoration: InputDecoration(labelText: label, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+        items: List.generate(items.length, (i) => DropdownMenuItem(value: items[i], child: Text(labels != null ? labels[i] : items[i]))),
+        onChanged: onChanged,
+        validator: (v) => v == null ? 'Wajib' : null,
+      ),
+    );
+  }
+
+  Widget _buildImagePicker(StateSetter setModalState) {
+    return GestureDetector(
+      onTap: () => _pickImage(setModalState),
+      child: Container(
+        height: 140, width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(color: softBg, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade300)),
+        child: _fotoBase64 != null
+          ? ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.memory(base64Decode(_fotoBase64!), fit: BoxFit.cover))
+          : const Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.add_a_photo, color: navy, size: 32), Text('Pilih Foto Galeri', style: TextStyle(fontSize: 12))]),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: softBg,
+      appBar: AppBar(
+        title: Text('Konten & Publikasi', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, color: navy, fontSize: 18)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: navy, unselectedLabelColor: textGrey,
+          indicatorColor: gold,
+          tabs: const [Tab(text: 'PENGUMUMAN'), Tab(text: 'RENUNGAN'), Tab(text: 'GALERI')],
+        ),
+      ),
+      body: Column(
+        children: [
+          _buildActionHeader(),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator(color: navy))
+                : RefreshIndicator(
+                    onRefresh: _fetchData,
+                    color: navy,
+                    child: _dataList.isEmpty
+                        ? _buildEmptyState()
+                        : (_tabController.index == 2 ? _buildGalleryGrid() : _buildContentList()),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionHeader() {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Daftar ${_getTabTitle()}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: navy)),
+            const Text('Media komunikasi jemaat', style: TextStyle(fontSize: 12, color: textGrey)),
+          ]),
+          ElevatedButton.icon(
+            onPressed: () => _handleOpenModal(),
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Tambah'),
+            style: ElevatedButton.styleFrom(backgroundColor: navy, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContentList() {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: _dataList.length,
+      itemBuilder: (context, index) {
+        final item = _dataList[index];
+        bool isActive = item['status'] == 'Aktif';
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          child: ListTile(
+            contentPadding: const EdgeInsets.all(16),
+            title: Row(
+              children: [
+                Expanded(child: Text(item['judul'] ?? item['tema'] ?? '-', style: const TextStyle(fontWeight: FontWeight.bold))),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(color: isActive ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1), borderRadius: BorderRadius.circular(5)),
+                  child: Text(item['status'] ?? 'Aktif', style: TextStyle(fontSize: 10, color: isActive ? Colors.green : Colors.red, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 4),
+                Text(item['isi'] ?? '', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
+                if (item['scope'] != null) ...[
+                  const SizedBox(height: 8),
+                  Text('Audiens: ${item['scope'].toString().toUpperCase()}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: gold)),
+                ]
+              ],
+            ),
+            trailing: PopupMenuButton(
+              onSelected: (v) {
+                if (v == 'edit') _handleOpenModal(item);
+                if (v == 'delete') _handleDelete(item);
+              },
+              itemBuilder: (c) => [
+                const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit, size: 18), SizedBox(width: 8), Text('Edit')])),
+                const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete, size: 18, color: Colors.red), SizedBox(width: 8), Text('Hapus', style: TextStyle(color: Colors.red))])),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildGalleryGrid() {
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.8),
+      itemCount: _dataList.length,
+      itemBuilder: (context, index) {
+        final item = _dataList[index];
+        return Container(
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.grey.shade200)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+                  child: Image.network(
+                    ApiConstants.getImageUrl(item['path_foto'] ?? ''),
+                    width: double.infinity, fit: BoxFit.cover,
+                    errorBuilder: (c, e, s) => const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item['judul'] ?? '-', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    Text(item['kategori'] ?? 'Umum', style: const TextStyle(fontSize: 10, color: gold, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        GestureDetector(onTap: () => _handleOpenModal(item), child: const Icon(Icons.edit, size: 16, color: Colors.orange)),
+                        const SizedBox(width: 12),
+                        GestureDetector(onTap: () => _handleDelete(item), child: const Icon(Icons.delete, size: 16, color: Colors.red)),
+                      ],
+                    )
+                  ],
+                ),
+              )
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _handleDelete(dynamic item) async {
-    String label = item['judul'] ?? item['tema'] ?? 'konten ini';
     int id = item['id'];
     bool confirm = await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Konfirmasi Hapus'),
-        content: Text('Hapus data "$label" secara permanen?'),
+        title: const Text('Hapus Konten?'),
+        content: const Text('Data ini akan dihapus permanen dari publikasi.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
           TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Hapus', style: TextStyle(color: Colors.red))),
         ],
       ),
     ) ?? false;
-
     if (confirm) {
       try {
         switch (_tabController.index) {
@@ -220,440 +461,23 @@ class _PastorKontenScreenState extends State<PastorKontenScreen> with SingleTick
           case 2: await _contentService.deleteGallery(id); break;
         }
         _fetchData();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Konten berhasil dihapus'), backgroundColor: Colors.green));
-        }
       } catch (e) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Gagal menghapus: $e"), backgroundColor: Colors.red));
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
       }
     }
   }
 
-  Future<void> _pickImage(StateSetter setModalState) async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery, maxWidth: 800, imageQuality: 80);
-    if (image != null) {
-      final bytes = await image.readAsBytes();
-      final String base64Image = 'data:image/${image.path.split('.').last};base64,${base64Encode(bytes)}';
-      setModalState(() {
-        _fotoBase64 = base64Image;
-      });
-    }
-  }
-
-  void _showFormDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(
-            _formData['id'] == null ? 'Buat ${_getTabTitle()}' : 'Edit ${_getTabTitle()}',
-            style: const TextStyle(fontWeight: FontWeight.bold, color: navy),
-          ),
-          actionsAlignment: MainAxisAlignment.end,
-          content: SizedBox(
-            width: MediaQuery.of(context).size.width * 0.95,
-            child: SingleChildScrollView(
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: _buildFormFields(setModalState),
-                ),
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: _isSubmitting ? null : () => Navigator.pop(context),
-              child: const Text('Batal', style: TextStyle(color: slate)),
-            ),
-            SizedBox(
-              height: 40,
-              child: ElevatedButton(
-                onPressed: _isSubmitting ? null : () => _handleSubmit(setModalState),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: navy,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  minimumSize: const Size(0, 40),
-                ),
-                child: _isSubmitting
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text('Simpan Data', style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  List<Widget> _buildFormFields(StateSetter setModalState) {
-    int activeIdx = _tabController.index;
-
-    if (activeIdx == 2) { // Galeri
-      return [
-        DropdownButtonFormField<String>(
-          value: _formData['kategori'],
-          decoration: const InputDecoration(labelText: 'Kategori Kegiatan', border: OutlineInputBorder()),
-          items: ['Umum', 'Ibadah', 'Pemuda', 'Sekolah Minggu', 'Wanita']
-              .map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-          onChanged: (v) => setModalState(() => _formData['kategori'] = v),
-        ),
-        const SizedBox(height: 12),
-        _buildTextField('Judul Foto/Kegiatan', (v) => _formData['judul'] = v, initialValue: _formData['judul'], required: true),
-        const SizedBox(height: 12),
-        _buildTextField('Tanggal Kegiatan', (v) => _formData['tanggal_kegiatan'] = v, initialValue: _formData['tanggal_kegiatan'], hint: 'YYYY-MM-DD', required: true),
-        const SizedBox(height: 12),
-        _buildImagePicker(setModalState),
-        const SizedBox(height: 12),
-        _buildTextField('Deskripsi Singkat', (v) => _formData['deskripsi'] = v, initialValue: _formData['deskripsi'], maxLines: 3),
-      ];
-    }
-
-    return [
-      if (activeIdx == 0) ...[
-        _buildTextField('Judul Pengumuman', (v) => _formData['judul'] = v, initialValue: _formData['judul'], required: true),
-      ] else ...[
-        _buildTextField('Tema Renungan', (v) => _formData['tema'] = v, initialValue: _formData['tema'], required: true),
-        const SizedBox(height: 12),
-        _buildTextField('Ayat Pokok', (v) => _formData['ayat_pokok'] = v, initialValue: _formData['ayat_pokok'], required: true),
-      ],
-      const SizedBox(height: 12),
-      _buildTextField('Isi Konten', (v) => _formData['isi'] = v, initialValue: _formData['isi'], maxLines: 5, required: true),
-      const SizedBox(height: 12),
-      Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: DropdownButtonFormField<String>(
-              value: _formData['status'],
-              decoration: const InputDecoration(labelText: 'Status', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
-              items: ['Aktif', 'Tidak Aktif'].map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 13)))).toList(),
-              onChanged: (v) => setModalState(() => _formData['status'] = v),
-            ),
-          ),
-          if (activeIdx == 0) ...[
-            const SizedBox(width: 10),
-            Expanded(
-              child: DropdownButtonFormField<String>(
-                value: _formData['scope'],
-                decoration: const InputDecoration(labelText: 'Audiens', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
-                items: ['publik', 'jemaat', 'rayon'].map((s) => DropdownMenuItem(value: s, child: Text(s.toUpperCase(), style: const TextStyle(fontSize: 13)))).toList(),
-                onChanged: (v) => setModalState(() => _formData['scope'] = v),
-              ),
-            ),
-          ]
-        ],
-      ),
-      if (activeIdx == 0 && _formData['scope'] == 'rayon') ...[
-        const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          value: _rayonList.any((r) => r['id'].toString() == _formData['id_rayon']) ? _formData['id_rayon'] : null,
-          decoration: const InputDecoration(labelText: 'Pilih Rayon Target', border: OutlineInputBorder()),
-          items: _rayonList.map((r) => DropdownMenuItem(value: r['id'].toString(), child: Text(r['nama_rayon'] ?? r['name'] ?? '-'))).toList(),
-          onChanged: (v) => setModalState(() => _formData['id_rayon'] = v),
-          validator: (v) => (v == null || v.isEmpty) ? 'Pilih rayon target' : null,
-        ),
-      ]
-    ];
-  }
-
-  Widget _buildTextField(String label, Function(String?) onSaved, {String? initialValue, String? hint, bool required = false, int maxLines = 1}) {
-    return TextFormField(
-      initialValue: initialValue,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        border: const OutlineInputBorder(),
-        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12)
-      ),
-      maxLines: maxLines,
-      style: const TextStyle(fontSize: 14),
-      validator: required ? (v) => (v == null || v.isEmpty) ? 'Wajib diisi' : null : null,
-      onSaved: onSaved,
-    );
-  }
-
-  Widget _buildImagePicker(StateSetter setModalState) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('File Foto', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: slate)),
-        const SizedBox(height: 8),
-        InkWell(
-          onTap: () => _pickImage(setModalState),
-          child: Container(
-            height: 140,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.blue[50],
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.blue[100]!),
-            ),
-            child: _fotoBase64 != null
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.memory(base64Decode(_fotoBase64!.split(',').last), fit: BoxFit.cover),
-                  )
-                : (_formData['id'] != null && _formData['foto'] != null)
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        ApiConstants.getImageUrl(_formData['foto']),
-                        fit: BoxFit.cover,
-                        cacheWidth: 300,
-                        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image)
-                      ),
-                    )
-                  : const Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.add_a_photo_rounded, color: Colors.blue, size: 32),
-                      Text('Pilih Gambar', style: TextStyle(color: Colors.blue, fontSize: 12, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-          ),
-        ),
-        if (_formData['id'] != null)
-          const Padding(
-            padding: EdgeInsets.only(top: 4),
-            child: Text('*Biarkan kosong jika tidak ingin mengganti foto', style: TextStyle(fontSize: 10, color: slate)),
-          ),
-      ],
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FD),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        surfaceTintColor: Colors.white,
-        title: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Konten & Publikasi', style: TextStyle(color: navy, fontWeight: FontWeight.bold, fontSize: 18)),
-            Text('Kelola informasi, spiritualitas, dan dokumentasi', style: TextStyle(color: slate, fontSize: 12)),
-          ],
-        ),
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: navy,
-          unselectedLabelColor: slate,
-          indicatorColor: navy,
-          indicatorWeight: 3,
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-          tabs: const [
-            Tab(text: 'PENGUMUMAN'),
-            Tab(text: 'RENUNGAN'),
-            Tab(text: 'GALERI'),
-          ],
-        ),
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    'Daftar ${_getTabTitle()}',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  height: 40,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _handleOpenModal(),
-                    icon: const Icon(Icons.add, size: 18, color: Colors.white),
-                    label: Text('Tambah ${_getTabTitle()}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: navy,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      minimumSize: const Size(0, 40),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: navy))
-                : _errorMsg.isNotEmpty
-                    ? Center(child: Text(_errorMsg, style: const TextStyle(color: Colors.red)))
-                    : RefreshIndicator(
-                        onRefresh: _fetchData,
-                        child: _tabController.index == 2 ? _buildGaleriGrid() : _buildContentList(),
-                      ),
-          ),
-        ],
-      ),
-    );
+  Widget _buildEmptyState() {
+    return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+      Icon(Icons.auto_stories_outlined, size: 60, color: Colors.grey.shade300),
+      const SizedBox(height: 10),
+      Text('Belum ada konten ${_getTabTitle()}', style: TextStyle(color: Colors.grey.shade500)),
+    ]));
   }
 
   String _getTabTitle() {
-    switch (_tabController.index) {
-      case 0: return 'Pengumuman';
-      case 1: return 'Renungan';
-      case 2: return 'Galeri';
-      default: return '';
-    }
-  }
-
-  Widget _buildContentList() {
-    if (_dataList.isEmpty) return const Center(child: Text('Belum ada data.'));
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      itemCount: _dataList.length,
-      itemBuilder: (context, index) {
-        final item = _dataList[index];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFF1F5F9)),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)]
-          ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(16),
-            title: Text(item['judul'] ?? item['tema'] ?? '-', style: const TextStyle(fontWeight: FontWeight.bold, color: navy)),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (item['ayat_pokok'] != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(item['ayat_pokok'], style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blue)),
-                  ),
-                const SizedBox(height: 4),
-                Text(item['isi'] ?? '-', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, color: slate)),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    if (item['scope'] != null)
-                      _buildChip(item['scope'].toString().toUpperCase(), Colors.blue),
-                    _buildChip(item['status']?.toString().toUpperCase() ?? 'AKTIF',
-                      item['status'] == 'Aktif' ? Colors.green : Colors.red),
-                  ],
-                ),
-              ],
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined, color: Colors.amber, size: 20),
-                  onPressed: () => _handleOpenModal(item),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
-                  onPressed: () => _handleDelete(item),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildGaleriGrid() {
-    if (_dataList.isEmpty) return const Center(child: Text('Belum ada data.'));
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.75,
-      ),
-      itemCount: _dataList.length,
-      itemBuilder: (context, index) {
-        final item = _dataList[index];
-        final imageUrl = ApiConstants.getImageUrl(item['path_foto'] ?? item['foto']);
-
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFF1F5F9)),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)]
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: imageUrl.isNotEmpty
-                      ? Image.network(
-                          imageUrl,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          cacheWidth: 400,
-                          errorBuilder: (_, __, ___) => Container(color: Colors.grey[100], child: const Icon(Icons.broken_image_outlined)))
-                      : Container(color: Colors.grey[100], child: const Icon(Icons.image_outlined)),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(item['judul'] ?? '-', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: navy), maxLines: 1, overflow: TextOverflow.ellipsis),
-                    const SizedBox(height: 4),
-                    Text(item['kategori'] ?? 'Umum', style: const TextStyle(fontSize: 11, color: slate)),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        InkWell(
-                          onTap: () => _handleOpenModal(item),
-                          child: const Icon(Icons.edit_outlined, size: 18, color: Colors.amber),
-                        ),
-                        const SizedBox(width: 12),
-                        InkWell(
-                          onTap: () => _handleDelete(item),
-                          child: const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildChip(String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      margin: const EdgeInsets.only(right: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
-      ),
-    );
+    if (_tabController.index == 0) return 'Pengumuman';
+    if (_tabController.index == 1) return 'Renungan';
+    return 'Galeri';
   }
 }

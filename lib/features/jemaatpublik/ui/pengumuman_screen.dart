@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../providers/content_provider.dart';
 import '../models/content_model.dart';
 import 'public_drawer.dart';
@@ -14,18 +15,22 @@ class PengumumanScreen extends StatefulWidget {
 }
 
 class _PengumumanScreenState extends State<PengumumanScreen> {
-  // Mobile consistency colors
   static const Color navy = Color(0xFF05066F);
+  static const Color gold = Color(0xFFC5A327);
   static const Color redAccent = Color(0xFFD71313);
-  static const Color softBg = Color(0xFFF7F4FB);
-  static const Color textDark = Color(0xFF1E1E2F);
-  static const Color textGrey = Color(0xFF85879A);
+  static const Color softBg = Color(0xFFF8F9FE);
+  static const Color textDark = Color(0xFF1A1A2E);
+  static const Color textGrey = Color(0xFF7A7C92);
 
   @override
   void initState() {
     super.initState();
-    Future.microtask(() =>
-        Provider.of<ContentProvider>(context, listen: false).fetchAnnouncements());
+    // Menggunakan addPostFrameCallback untuk menghindari async gap warning
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Provider.of<ContentProvider>(context, listen: false).fetchAnnouncements();
+      }
+    });
   }
 
   String _formatTanggal(String dateString) {
@@ -39,10 +44,10 @@ class _PengumumanScreenState extends State<PengumumanScreen> {
 
   String _getBadgeLabel(String? category) {
     final cat = category?.toLowerCase() ?? '';
-    if (cat == 'publik') return "Pengumuman Publik";
-    if (cat == 'jemaat') return "Internal Jemaat";
-    if (cat == 'rayon') return "Khusus Rayon";
-    return "Warta Jemaat";
+    if (cat == 'publik') return "PENGUMUMAN PUBLIK";
+    if (cat == 'jemaat') return "INTERNAL JEMAAT";
+    if (cat == 'rayon') return "KHUSUS RAYON";
+    return "WARTA JEMAAT";
   }
 
   @override
@@ -53,11 +58,30 @@ class _PengumumanScreenState extends State<PengumumanScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        surfaceTintColor: Colors.white,
-        iconTheme: const IconThemeData(color: navy),
-        title: const Text(
-          'Pengumuman',
-          style: TextStyle(color: navy, fontSize: 17, fontWeight: FontWeight.w700),
+        scrolledUnderElevation: 0,
+        leading: Builder(
+          builder: (context) {
+            return IconButton(
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: navy.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.menu_rounded, color: navy, size: 22),
+              ),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+            );
+          },
+        ),
+        title: Text(
+          'Warta Jemaat',
+          style: GoogleFonts.montserrat(
+            color: navy,
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.5,
+          ),
         ),
         centerTitle: true,
       ),
@@ -66,44 +90,51 @@ class _PengumumanScreenState extends State<PengumumanScreen> {
           return RefreshIndicator(
             onRefresh: () => provider.fetchAnnouncements(),
             color: navy,
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                children: [
-                  // 1. HEADING (Identik React)
-                  _buildHeader(),
-
-                  // 2. BANNER (Identik React dengan Ayat/Quote)
-                  _buildBanner(),
-
-                  const SizedBox(height: 40),
-
-                  // 3. LIST PENGUMUMAN
-                  if (provider.isLoading)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 60),
-                      child: CircularProgressIndicator(color: navy),
-                    )
-                  else if (provider.announcements.isEmpty)
-                    _buildEmptyState()
-                  else
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: provider.announcements.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 20),
-                        itemBuilder: (context, index) {
+            child: CustomScrollView(
+              physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildHeader(),
+                        const SizedBox(height: 24),
+                        const _QuoteCard(),
+                        const SizedBox(height: 32),
+                        _buildSectionHeader('Info & Pengumuman', 'Warta terbaru dari gereja kami'),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+                  ),
+                ),
+                if (provider.isLoading)
+                  const SliverFillRemaining(
+                    child: Center(child: CircularProgressIndicator(color: navy)),
+                  )
+                else if (provider.announcements.isEmpty)
+                  SliverFillRemaining(
+                    child: _buildEmptyState(),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
                           final item = provider.announcements[index];
-                          return _buildAnnouncementCard(item);
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 20),
+                            child: _buildAnnouncementCard(item),
+                          );
                         },
+                        childCount: provider.announcements.length,
                       ),
                     ),
-
-                  const SizedBox(height: 60),
-                ],
-              ),
+                  ),
+                const SliverToBoxAdapter(child: SizedBox(height: 40)),
+              ],
             ),
           );
         },
@@ -113,87 +144,73 @@ class _PengumumanScreenState extends State<PengumumanScreen> {
   }
 
   Widget _buildHeader() {
-    return const Padding(
-      padding: EdgeInsets.fromLTRB(24, 34, 24, 0),
-      child: Column(
-        children: [
-          Text(
-            'Pengumuman',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 32,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: gold.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            'WARTA & INFO',
+            style: GoogleFonts.montserrat(
+              color: gold,
+              fontSize: 10,
               fontWeight: FontWeight.w900,
-              color: navy,
               letterSpacing: 1.5,
             ),
           ),
-          SizedBox(height: 12),
-          Text(
-            'Warta dan Informasi Terbaru Jemaat GPdI Sibulele',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 15, color: textGrey),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Pengumuman\nJemaat Sibulele',
+          style: GoogleFonts.montserrat(
+            color: navy,
+            fontSize: 28,
+            fontWeight: FontWeight.w900,
+            height: 1.1,
+            letterSpacing: -1,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildBanner() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 40, 24, 0),
-      child: Container(
-        height: 220,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: navy,
-          borderRadius: BorderRadius.circular(20),
-          image: DecorationImage(
-            image: const NetworkImage(
-              "https://images.unsplash.com/photo-1455849318743-b2233052fcff?q=80&w=2069&auto=format&fit=crop",
-            ),
-            fit: BoxFit.cover,
-            colorFilter: ColorFilter.mode(navy.withOpacity(0.6), BlendMode.darken),
+  Widget _buildSectionHeader(String title, String subtitle) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.montserrat(
+            color: textDark,
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
           ),
         ),
-        child: const Padding(
-          padding: EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                "\"Sebab Aku ini mengetahui rancangan-rancangan apa yang ada pada-Ku mengenai kamu, demikianlah firman TUHAN, yaitu rancangan damai sejahtera dan bukan rancangan kecelakaan, untuk memberikan kepadamu hari depan yang penuh harapan.\"",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontStyle: FontStyle.italic,
-                  height: 1.4,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              SizedBox(height: 16),
-              Text(
-                "— Yeremia 29:11",
-                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-              ),
-            ],
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: GoogleFonts.montserrat(
+            color: textGrey,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
           ),
         ),
-      ),
+      ],
     );
   }
 
   Widget _buildAnnouncementCard(AnnouncementModel item) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white, width: 2),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -202,61 +219,65 @@ class _PengumumanScreenState extends State<PengumumanScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Card
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: redAccent.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        _getBadgeLabel(item.category),
-                        style: const TextStyle(
-                          color: redAccent,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: redAccent.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    _getBadgeLabel(item.category),
+                    style: GoogleFonts.montserrat(
+                      color: redAccent,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      item.title,
-                      style: const TextStyle(
-                        color: navy,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        height: 1.2,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                _formatTanggal(item.date),
-                style: const TextStyle(color: textGrey, fontSize: 11, fontWeight: FontWeight.w500),
-              ),
-            ],
+                Text(
+                  _formatTanggal(item.date),
+                  style: GoogleFonts.montserrat(
+                    color: textGrey,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
-          const SizedBox(height: 16),
-          // Deskripsi
-          Text(
-            item.content,
-            style: const TextStyle(
-              color: Color(0xFF4B5563), // gray-700
-              fontSize: 14,
-              height: 1.6,
-              fontWeight: FontWeight.w400,
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.title,
+                  style: GoogleFonts.montserrat(
+                    color: navy,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    height: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                const SizedBox(height: 12),
+                Text(
+                  item.content,
+                  style: GoogleFonts.montserrat(
+                    color: const Color(0xFF4B5563),
+                    fontSize: 14,
+                    height: 1.6,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -267,25 +288,105 @@ class _PengumumanScreenState extends State<PengumumanScreen> {
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 80),
+        padding: const EdgeInsets.symmetric(horizontal: 40),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.grey.shade200, width: 2),
-              ),
-              child: const Icon(Icons.campaign_outlined, color: Colors.grey, size: 48),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20),
+                ],
+              ), // Perbaikan kurung di sini: sebelumnya ],
+              child: Icon(Icons.campaign_rounded, color: textGrey.withValues(alpha: 0.3), size: 64),
             ),
-            const SizedBox(height: 20),
-            const Text(
-              "Belum ada pengumuman terbaru saat ini.",
-              style: TextStyle(color: textGrey, fontSize: 14, fontWeight: FontWeight.w500),
+            const SizedBox(height: 24),
+            Text(
+              "Belum Ada Pengumuman",
+              style: GoogleFonts.montserrat(color: textDark, fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Warta jemaat terbaru akan muncul di sini segera setelah tersedia.",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.montserrat(color: textGrey, fontSize: 14, fontWeight: FontWeight.w500),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _QuoteCard extends StatelessWidget {
+  const _QuoteCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF05066F), Color(0xFF1A1B8C)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF05066F).withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -20,
+            bottom: -20,
+            child: Icon(
+              Icons.auto_awesome,
+              size: 100,
+              color: Colors.white.withValues(alpha: 0.05),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                Icon(Icons.format_quote_rounded, color: Colors.white.withValues(alpha: 0.5), size: 32),
+                const SizedBox(height: 12),
+                Text(
+                  "Sebab Aku ini mengetahui rancangan-rancangan apa yang ada pada-Ku mengenai kamu, demikianlah firman TUHAN, yaitu rancangan damai sejahtera...",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.montserrat(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontStyle: FontStyle.italic,
+                    height: 1.6,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    "— Yeremia 29:11",
+                    style: GoogleFonts.montserrat(color: const Color(0xFFFFD34E), fontSize: 12, fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

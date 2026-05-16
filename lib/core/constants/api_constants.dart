@@ -8,10 +8,22 @@ class ApiConstants {
   static final String host = _getHost();
   static final String baseUrl = '$host/api/';
 
-  // Host khusus untuk aset gambar (langsung ke Content Service Port 8002)
-  static String _getAssetHost() {
+  // Host default (Gateway)
+  static String _getGatewayHost() {
+    if (kIsWeb) return 'http://localhost:8000';
+    return 'http://$_localIp:8000';
+  }
+
+  // Host khusus untuk Content Service (Galeri, dll)
+  static String _getContentAssetHost() {
     if (kIsWeb) return 'http://localhost:8002';
     return 'http://$_localIp:8002';
+  }
+
+  // Host khusus untuk Event Service (Kegiatan)
+  static String _getEventAssetHost() {
+    if (kIsWeb) return 'http://localhost:8003';
+    return 'http://$_localIp:8003';
   }
 
   static String _getHost() {
@@ -27,7 +39,7 @@ class ApiConstants {
   static String getImageUrl(String? path) {
     if (path == null || path.isEmpty) return '';
 
-    // Jika path sudah berupa URL lengkap (http...)
+    // Jika path sudah berupa URL lengkap
     if (path.startsWith('http')) {
       String fixedUrl = path;
       if (!kIsWeb) {
@@ -42,19 +54,29 @@ class ApiConstants {
     String cleanPath = path.trim();
     if (cleanPath.startsWith('/')) cleanPath = cleanPath.substring(1);
 
-    // Hapus prefix 'public/' jika ada dari database
+    // Deteksi Service berdasarkan folder
+    String assetHost = _getGatewayHost();
+
+    // Jika mengandung 'galeri' atau path konten lainnya, arahkan ke 8002
+    if (cleanPath.contains('galeri') || cleanPath.contains('konten')) {
+      assetHost = _getContentAssetHost();
+    }
+    // Jika mengandung 'kegiatan', arahkan ke 8003
+    else if (cleanPath.contains('kegiatan')) {
+      assetHost = _getEventAssetHost();
+    }
+
+    // Hapus prefix 'public/' jika ada
     if (cleanPath.startsWith('public/')) {
       cleanPath = cleanPath.substring(7);
     }
 
-    // Pastikan diawali dengan 'storage/' agar sesuai dengan link artisan storage:link
+    // Pastikan diawali dengan 'storage/'
     if (!cleanPath.startsWith('storage/')) {
       cleanPath = 'storage/$cleanPath';
     }
 
-    // Gunakan Port 8002 karena file fisik ada di content-publication-service
-    final String finalUrl = '${_getAssetHost()}/$cleanPath';
-    return finalUrl;
+    return '$assetHost/$cleanPath';
   }
 
   // --- Endpoints via API Gateway (Port 8000) ---

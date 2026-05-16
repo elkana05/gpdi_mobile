@@ -1,39 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'public_drawer.dart';
 import 'app_bottom_navigation.dart';
 
 class PublicKontakScreen extends StatelessWidget {
   const PublicKontakScreen({super.key});
 
-  // Warna konsisten mobile (Navy & Gold)
   static const Color navy = Color(0xFF05066F);
   static const Color gold = Color(0xFFC5A327);
-  static const Color redAccent = Color(0xFFD71313);
-  static const Color softBg = Color(0xFFF7F4FB);
+  static const Color softBg = Color(0xFFF8F9FE);
+  static const Color textDark = Color(0xFF1A1A2E);
+  static const Color textGrey = Color(0xFF7A7C92);
+
+  static const LatLng _churchLocation = LatLng(2.3331, 99.0625);
 
   Future<void> _launchURL(String url) async {
     final Uri uri = Uri.parse(url);
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       throw Exception('Could not launch $url');
     }
-  }
-
-  void _openWhatsApp() {
-    String phone = "081263299741";
-    // Bersihkan nomor telepon agar hanya berisi angka untuk WA
-    String cleanedPhone = phone.replaceAll(RegExp(r'\D'), '');
-    _launchURL("https://wa.me/$cleanedPhone");
-  }
-
-  void _openMap() {
-    // Sesuai query akurat di React
-    _launchURL("https://www.google.com/maps/search/?api=1&query=GPdI+Sibulele+Balige");
-  }
-
-  void _openDirections() {
-    // Sesuai query navigasi di React
-    _launchURL("https://www.google.com/maps/dir/?api=1&destination=GPdI+Sibulele+Balige");
   }
 
   @override
@@ -44,249 +32,50 @@ class PublicKontakScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        surfaceTintColor: Colors.white,
-        iconTheme: const IconThemeData(color: navy),
-        title: const Text(
+        scrolledUnderElevation: 0,
+        leading: Builder(
+          builder: (context) {
+            return IconButton(
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: navy.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.menu_rounded, color: navy, size: 22),
+              ),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+            );
+          },
+        ),
+        title: Text(
           "Kontak & Lokasi",
-          style: TextStyle(color: navy, fontWeight: FontWeight.w700, fontSize: 17),
+          style: GoogleFonts.montserrat(
+            color: navy,
+            fontWeight: FontWeight.w800,
+            fontSize: 18,
+            letterSpacing: -0.5,
+          ),
         ),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 40),
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. JUDUL (Sesuai React)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 34, 24, 0),
-              child: Column(
-                children: [
-                  const Text(
-                    "Kontak & Lokasi",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w900,
-                      color: navy,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  Text(
-                    "Informasi Alamat dan Media Komunikasi Gereja",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // 2. BANNER (Sesuai React)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 48, 24, 0),
-              child: Container(
-                height: 220,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  image: const DecorationImage(
-                    image: NetworkImage(
-                      "https://images.unsplash.com/photo-1544427920-c49ccfb85579?q=80&w=2000&auto=format&fit=crop",
-                    ),
-                    fit: BoxFit.cover,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-              child: Divider(color: Color(0xFFE5E7EB)), // gray-200
-            ),
-
-            // 3. DETAIL KONTAK (Sesuai React)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Container(
-                padding: const EdgeInsets.all(32),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFF3F4F6)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.02),
-                      blurRadius: 15,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Detail Kontak",
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: navy,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      "GPdI Jemaat Sibulele",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: redAccent,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      "Jl. Sibulele No. 123, Balige, Toba, Sumatera Utara",
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Color(0xFF374151), // gray-700
-                        height: 1.6,
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-
-                    // Telepon
-                    _buildContactRow(
-                      icon: Icons.phone_rounded,
-                      label: "Telepon:",
-                      value: "0812-6329-9741",
-                      iconBg: const Color(0xFFEFF6FF), // blue-50
-                      iconColor: Colors.blue.shade600,
-                      onTap: () => _launchURL("tel:081263299741"),
-                    ),
-
-                    // WhatsApp
-                    _buildContactRow(
-                      icon: Icons.chat_rounded,
-                      label: "WhatsApp:",
-                      value: "Chat WhatsApp",
-                      isWAButton: true,
-                      iconBg: const Color(0xFFECFDF5), // green-50
-                      iconColor: Colors.green.shade600,
-                      onTap: _openWhatsApp,
-                    ),
-
-                    // Email
-                    _buildContactRow(
-                      icon: Icons.email_rounded,
-                      label: "Email:",
-                      value: "gpdisibulele@gmail.com",
-                      iconBg: const Color(0xFFFEF2F2), // red-50
-                      iconColor: Colors.red.shade600,
-                      onTap: () => _launchURL("mailto:gpdisibulele@gmail.com"),
-                    ),
-
-                    // Facebook
-                    _buildContactRow(
-                      icon: Icons.facebook_rounded,
-                      label: "Facebook:",
-                      value: "GPdI Sibulele Official",
-                      isLink: true,
-                      iconBg: const Color(0xFFDBEAFE), // blue-100
-                      iconColor: const Color(0xFF1E40AF), // blue-800
-                      onTap: () => _launchURL("https://facebook.com/GPdISibulele"),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 40),
-
-            // 4. PETA LOKASI (Sesuai React)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Peta Lokasi",
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: navy,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  // Mobile Map Placeholder (Static map feel)
-                  Container(
-                    height: 250,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFFE5E7EB)),
-                      image: const DecorationImage(
-                        image: NetworkImage(
-                          "https://maps.googleapis.com/maps/api/staticmap?center=GPdI+Sibulele+Balige&zoom=15&size=600x400&maptype=roadmap&markers=color:red%7CGC8P+J5M,+Sibulele,+Balige,+Toba,+North+Sumatra&key=YOUR_API_KEY",
-                        ),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.location_on, color: redAccent, size: 32),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  // Buttons (Sesuai React)
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: _openMap,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: navy,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          ),
-                          child: const Text("Google Maps", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: _openDirections,
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: navy,
-                            side: const BorderSide(color: navy, width: 2),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          ),
-                          child: const Text("Dapatkan Arah", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
+            _buildHeader(),
+            const SizedBox(height: 32),
+            _buildSectionHeader('Media Komunikasi', 'Hubungi kami melalui platform berikut'),
+            const SizedBox(height: 16),
+            _buildContactGrid(),
+            const SizedBox(height: 32),
+            _buildSectionHeader('Lokasi Gereja', 'Mari kunjungi kami di Balige'),
+            const SizedBox(height: 16),
+            _buildMapCard(context),
+            const SizedBox(height: 32),
+            _buildAddressCard(),
             const SizedBox(height: 40),
           ],
         ),
@@ -295,66 +84,313 @@ class PublicKontakScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildContactRow({
+  Widget _buildHeader() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: gold.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            'HUBUNGI KAMI',
+            style: GoogleFonts.montserrat(
+              color: gold,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.5
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Selalu Terhubung\ndengan Jemaat',
+          style: GoogleFonts.montserrat(
+            color: navy,
+            fontSize: 28,
+            fontWeight: FontWeight.w900,
+            height: 1.1,
+            letterSpacing: -1,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSectionHeader(String title, String subtitle) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.montserrat(
+            color: textDark,
+            fontSize: 18,
+            fontWeight: FontWeight.w800
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: GoogleFonts.montserrat(
+            color: textGrey,
+            fontSize: 13,
+            fontWeight: FontWeight.w500
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContactGrid() {
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      mainAxisSpacing: 16,
+      crossAxisSpacing: 16,
+      childAspectRatio: 1.1,
+      children: [
+        _buildContactCard(
+          icon: Icons.chat_rounded,
+          title: 'WhatsApp',
+          subtitle: '0812-6329-9741',
+          color: const Color(0xFF25D366),
+          onTap: () => _launchURL("https://wa.me/6281263299741"),
+        ),
+        _buildContactCard(
+          icon: Icons.phone_rounded,
+          title: 'Telepon',
+          subtitle: 'Panggilan Suara',
+          color: const Color(0xFF4A90E2),
+          onTap: () => _launchURL("tel:081263299741"),
+        ),
+        _buildContactCard(
+          icon: Icons.mail_rounded,
+          title: 'Email',
+          subtitle: 'Kirim Pesan',
+          color: const Color(0xFFE53935),
+          onTap: () => _launchURL("mailto:gpdisibulele@gmail.com"),
+        ),
+        _buildContactCard(
+          icon: Icons.facebook_rounded,
+          title: 'Facebook',
+          subtitle: 'GPdI Sibulele',
+          color: const Color(0xFF1877F2),
+          onTap: () => _launchURL("https://facebook.com/GPdISibulele"),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContactCard({
     required IconData icon,
-    required String label,
-    required String value,
-    required Color iconBg,
-    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required Color color,
     required VoidCallback onTap,
-    bool isWAButton = false,
-    bool isLink = false,
   }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
-      child: Row(
-        children: [
-          Container(
-            height: 40,
-            width: 40,
-            decoration: BoxDecoration(
-              color: iconBg,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: iconColor, size: 20),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
           ),
-          const SizedBox(width: 16),
-          Text(
-            label,
-            style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1F2937), fontSize: 16),
-          ),
-          const SizedBox(width: 8),
-          if (isWAButton)
-            GestureDetector(
-              onTap: onTap,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF25D366),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  "Chat WhatsApp",
-                  style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                ),
-              ),
-            )
-          else
-            Expanded(
-              child: GestureDetector(
-                onTap: onTap,
-                child: Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: isLink ? Colors.blue.shade600 : const Color(0xFF4B5563),
-                    fontWeight: isLink ? FontWeight.bold : FontWeight.normal,
-                    decoration: isLink ? TextDecoration.underline : null,
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  overflow: TextOverflow.ellipsis,
+                  child: Icon(icon, color: color, size: 24),
                 ),
+                const Spacer(),
+                Text(
+                  title,
+                  style: GoogleFonts.montserrat(
+                    color: textDark,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.montserrat(
+                    color: textGrey,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMapCard(BuildContext context) {
+    return Container(
+      height: 320,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: navy.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: Stack(
+          children: [
+            FlutterMap(
+              options: const MapOptions(
+                initialCenter: _churchLocation,
+                initialZoom: 15,
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.gpdi.sibulele',
+                ),
+                const MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: _churchLocation,
+                      width: 60,
+                      height: 60,
+                      child: Icon(
+                        Icons.location_on_rounded,
+                        color: Color(0xFFD71313),
+                        size: 45,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            Positioned(
+              bottom: 20,
+              left: 20,
+              right: 20,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _launchURL("https://www.google.com/maps/search/?api=1&query=GPdI+Sibulele+Balige"),
+                      icon: const Icon(Icons.map_rounded, size: 18),
+                      label: const Text('Buka Maps'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: navy,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        elevation: 4,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)
+                      ],
+                    ),
+                    child: IconButton(
+                      onPressed: () => _churchLocation, // Just to show position again
+                      icon: const Icon(Icons.my_location_rounded, color: navy),
+                    ),
+                  ),
+                ],
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddressCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.grey.withOpacity(0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: gold.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.church_rounded, color: gold, size: 22),
+              ),
+              const SizedBox(width: 16),
+              Text(
+                'GPdI Jemaat Sibulele',
+                style: GoogleFonts.montserrat(
+                  color: navy,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Jl. Sibulele No. 123, Balige, Kabupaten Toba, Sumatera Utara, 22312',
+            style: GoogleFonts.montserrat(
+              color: textDark,
+              fontSize: 14,
+              height: 1.6,
+              fontWeight: FontWeight.w600
+            ),
+          ),
+          const SizedBox(height: 20),
+          OutlinedButton.icon(
+            onPressed: () => _launchURL("https://www.google.com/maps/dir/?api=1&destination=GPdI+Sibulele+Balige"),
+            icon: const Icon(Icons.directions_rounded, size: 18),
+            label: const Text('Dapatkan Arah Perjalanan'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: navy,
+              side: const BorderSide(color: navy, width: 1.5),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+          ),
         ],
       ),
     );

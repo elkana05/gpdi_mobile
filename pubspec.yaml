@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   provider: ^6.1.2
   dio: ^5.4.3
@@ -16,8 +18,10 @@ dependencies:
   go_router: ^14.0.0
   google_fonts: ^6.2.1
   url_launcher: ^6.3.1
-  intl: ^0.19.0
+  intl: ^0.20.2
   image_picker: ^1.0.7
+  flutter_map: ^6.1.0
+  latlong2: ^0.9.1
 
 dev_dependencies:
   flutter_test:
@@ -34,8 +38,14 @@ flutter:
     - web/favicon.png
 
 flutter_launcher_icons:
-  android: true
+  android: "launcher_icon"
   ios: true
   image_path: "web/favicon.png"
   adaptive_icon_background: "#FFFFFF"
   adaptive_icon_foreground: "web/favicon.png"
+  # Properti di bawah ini membantu memastikan icon tidak terdistorsi di beberapa versi Android
+  web:
+    generate: true
+    image_path: "web/favicon.png"
+    backgroundColor: "#FFFFFF"
+    themeColor: "#FFFFFF"

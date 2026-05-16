@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/user_model.dart';
 import '../models/family_member_model.dart';
+import '../models/rayon_model.dart';
 import '../services/user_service.dart';
 
 class UserProvider extends ChangeNotifier {
@@ -9,22 +10,22 @@ class UserProvider extends ChangeNotifier {
   UserModel? _detailedProfile;
   List<FamilyMemberModel> _familyMembers = [];
   List<UserModel> _adminUserList = [];
+  List<RayonModel> _rayons = [];
 
   bool _isLoading = false;
   String _errorMessage = '';
 
   UserModel? get detailedProfile => _detailedProfile;
   List<FamilyMemberModel> get familyMembers => _familyMembers;
-  List<UserModel> get adminUserList => _adminUserList;
+  List<UserModel> get adminUsers => _adminUserList;
+  List<RayonModel> get rayons => _rayons;
   bool get isLoading => _isLoading;
   String get errorMessage => _errorMessage;
 
-  // 1. Ambil Profil & Keluarga (Sekaligus)
   Future<void> fetchPersonalData() async {
     _isLoading = true;
     _errorMessage = '';
     notifyListeners();
-
     try {
       final results = await Future.wait([
         _service.getProfile(),
@@ -40,14 +41,42 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  // 2. Update Profil
-  Future<bool> updateProfile(Map<String, dynamic> data) async {
+  // --- Manajemen Jemaat (Admin/Pastor) ---
+
+  Future<void> fetchAdminUsers() async {
     _isLoading = true;
     _errorMessage = '';
     notifyListeners();
     try {
-      await _service.updateProfile(data);
-      await fetchPersonalData(); // Refresh data setelah update
+      _adminUserList = await _service.getAllUsers();
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchRayons() async {
+    _isLoading = true;
+    _errorMessage = '';
+    notifyListeners();
+    try {
+      _rayons = await _service.getRayons();
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> createJemaat(Map<String, dynamic> data) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await _service.createJemaat(data);
+      await fetchAdminUsers();
       return true;
     } catch (e) {
       _errorMessage = e.toString();
@@ -58,10 +87,79 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  // 3. Update Password
-  Future<bool> changePassword(String oldPass, String newPass, String confirmPass) async {
+  Future<bool> updateJemaat(String id, Map<String, dynamic> data) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await _service.updateJemaat(id, data);
+      // Jika role berubah, update juga rolenya secara spesifik sesuai logic React
+      if (data.containsKey('role')) {
+        await _service.updateUserRole(id, data['role']);
+      }
+      await fetchAdminUsers();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> deleteJemaat(String id) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await _service.deleteJemaat(id);
+      await fetchAdminUsers();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> updateUserRole(String id, String role) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await _service.updateUserRole(id, role);
+      await fetchAdminUsers();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // --- Profil & Keluarga ---
+
+  Future<bool> updateProfile(Map<String, dynamic> data) async {
     _isLoading = true;
     _errorMessage = '';
+    notifyListeners();
+    try {
+      await _service.updateProfile(data);
+      await fetchPersonalData();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> changePassword(String oldPass, String newPass, String confirmPass) async {
+    _isLoading = true;
     notifyListeners();
     try {
       await _service.updatePassword(oldPass, newPass, confirmPass);
@@ -75,10 +173,8 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  // 4. Manajemen Keluarga
   Future<bool> addFamilyMember(Map<String, dynamic> data) async {
     _isLoading = true;
-    _errorMessage = '';
     notifyListeners();
     try {
       await _service.addFamilyMember(data);
@@ -95,7 +191,6 @@ class UserProvider extends ChangeNotifier {
 
   Future<bool> updateFamilyMember(int id, Map<String, dynamic> data) async {
     _isLoading = true;
-    _errorMessage = '';
     notifyListeners();
     try {
       await _service.updateFamilyMember(id, data);
@@ -112,7 +207,6 @@ class UserProvider extends ChangeNotifier {
 
   Future<bool> deleteFamilyMember(int id) async {
     _isLoading = true;
-    _errorMessage = '';
     notifyListeners();
     try {
       await _service.deleteFamilyMember(id);
@@ -121,20 +215,6 @@ class UserProvider extends ChangeNotifier {
     } catch (e) {
       _errorMessage = e.toString();
       return false;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  // 5. Admin: Fetch Semua User
-  Future<void> fetchAllUsersAdmin() async {
-    _isLoading = true;
-    notifyListeners();
-    try {
-      _adminUserList = await _service.getAllUsers();
-    } catch (e) {
-      _errorMessage = e.toString();
     } finally {
       _isLoading = false;
       notifyListeners();

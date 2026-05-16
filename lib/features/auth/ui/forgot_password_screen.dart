@@ -6,12 +6,12 @@ import 'package:go_router/go_router.dart';
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
 
-  static const Color navy = Color(0xFF000066);
+  static const Color navy = Color(0xFF05066F);
   static const Color gold = Color(0xFFC5A327);
   static const Color softBg = Color(0xFFF8F9FE);
   static const Color softInput = Color(0xFFF1F4FF);
-  static const Color textDark = Color(0xFF1E1E2F);
-  static const Color textGrey = Color(0xFF6F7182);
+  static const Color textDark = Color(0xFF1A1A2E);
+  static const Color textGrey = Color(0xFF7A7C92);
 
   @override
   State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
@@ -34,9 +34,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     if (identity.isEmpty || birthDate.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Nomor Induk Jemaat/Email dan Tanggal Lahir wajib diisi.'),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: const Text('Nomor Induk Jemaat/Email dan Tanggal Lahir wajib diisi.'),
+          backgroundColor: const Color(0xFFD71313),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
       return;
@@ -72,7 +74,11 @@ Terima kasih.
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal membuka WhatsApp: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Gagal membuka WhatsApp: $e'),
+          backgroundColor: const Color(0xFFD71313),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     }
   }
@@ -81,72 +87,124 @@ Terima kasih.
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ForgotPasswordScreen.softBg,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.white,
-              ForgotPasswordScreen.softBg,
-              ForgotPasswordScreen.softBg.withOpacity(0.8),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              children: [
-                const SizedBox(height: 20),
-                _buildHeader(),
-                const SizedBox(height: 40),
-                Text(
-                  'Lupa Password',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.playfairDisplay(
-                    color: ForgotPasswordScreen.navy,
-                    fontSize: 32,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Masukkan data Anda untuk melakukan\nproses verifikasi reset password',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: ForgotPasswordScreen.textGrey,
-                    fontSize: 14,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                _buildForgotForm(),
-                const SizedBox(height: 24),
-                _buildInfoBox(),
-                const SizedBox(height: 40),
-                _buildFooter(),
-                const SizedBox(height: 20),
-              ],
+      body: Stack(
+        children: [
+          // Background Decorative Elements
+          Positioned(
+            top: -100,
+            left: -100,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                color: ForgotPasswordScreen.navy.withOpacity(0.03),
+                shape: BoxShape.circle,
+              ),
             ),
           ),
-        ),
+          SafeArea(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                children: [
+                  const SizedBox(height: 40),
+                  _buildLogoHeader(),
+                  const SizedBox(height: 48),
+                  _buildHeaderText(),
+                  const SizedBox(height: 40),
+                  _buildForgotForm(),
+                  const SizedBox(height: 24),
+                  _buildInfoBox(),
+                  const SizedBox(height: 48),
+                  _buildFooter(),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildLogoHeader() {
+    return Column(
       children: [
-        const Icon(Icons.church_outlined, color: ForgotPasswordScreen.navy, size: 28),
-        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: ForgotPasswordScreen.navy.withOpacity(0.08),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Image.asset(
+            'web/favicon.png',
+            height: 48,
+            errorBuilder: (context, error, stackTrace) =>
+                const Icon(Icons.church_rounded, color: ForgotPasswordScreen.navy, size: 40),
+          ),
+        ),
+        const SizedBox(height: 16),
         Text(
-          'GPDI Sibulele',
-          style: GoogleFonts.merriweather(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
+          'GPdI SIBULELE',
+          style: GoogleFonts.plusJakartaSans(
             color: ForgotPasswordScreen.navy,
+            fontSize: 14,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 2,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeaderText() {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: const Color(0xFFD71313).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: const Text(
+            'RESET PASSWORD',
+            style: TextStyle(
+              color: Color(0xFFD71313),
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.5
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'Lupa Kata Sandi?',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: ForgotPasswordScreen.navy,
+            fontSize: 32,
+            fontWeight: FontWeight.w900,
+            height: 1.1,
+            letterSpacing: -1,
+          ),
+        ),
+        const SizedBox(height: 12),
+        const Text(
+          'Jangan khawatir, masukkan data Anda untuk\nverifikasi reset password oleh Admin',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: ForgotPasswordScreen.textGrey,
+            fontSize: 14,
+            height: 1.5,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
@@ -155,16 +213,15 @@ Terima kasih.
 
   Widget _buildForgotForm() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.7),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white, width: 2),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: ForgotPasswordScreen.navy.withOpacity(0.05),
+            blurRadius: 25,
+            offset: const Offset(0, 15),
           ),
         ],
       ),
@@ -172,57 +229,65 @@ Terima kasih.
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildLabel('NOMOR INDUK JEMAAT / EMAIL'),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           _buildTextField(
             controller: identityController,
             hint: 'Masukkan ID atau Email',
-            prefixIcon: Icons.badge_outlined,
+            prefixIcon: Icons.badge_rounded,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           _buildLabel('TANGGAL LAHIR'),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           _buildTextField(
             controller: birthDateController,
             hint: 'Contoh: 12-05-1990',
-            prefixIcon: Icons.calendar_today_outlined,
+            prefixIcon: Icons.calendar_today_rounded,
           ),
           const SizedBox(height: 32),
           SizedBox(
             width: double.infinity,
-            height: 54,
+            height: 58,
             child: ElevatedButton(
               onPressed: _submitResetRequest,
               style: ElevatedButton.styleFrom(
                 backgroundColor: ForgotPasswordScreen.navy,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 4,
-                shadowColor: ForgotPasswordScreen.navy.withOpacity(0.5),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 0,
               ),
-              child: Row(
+              child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
+                  Text(
                     'Kirim ke WhatsApp',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 0.5),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 12),
                   const Icon(Icons.send_rounded, size: 18),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           Center(
             child: TextButton(
               onPressed: () => context.pop(),
-              child: const Text(
-                'Kembali ke Login',
-                style: TextStyle(
-                  color: ForgotPasswordScreen.textGrey,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                ),
+              style: TextButton.styleFrom(
+                foregroundColor: ForgotPasswordScreen.textGrey,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.arrow_back_rounded, size: 16),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Kembali ke Login',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -235,10 +300,10 @@ Terima kasih.
     return Text(
       text,
       style: const TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w700,
+        fontSize: 10,
+        fontWeight: FontWeight.w900,
         color: ForgotPasswordScreen.textGrey,
-        letterSpacing: 0.5,
+        letterSpacing: 1.2,
       ),
     );
   }
@@ -250,18 +315,19 @@ Terima kasih.
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: ForgotPasswordScreen.softInput,
-        borderRadius: BorderRadius.circular(12),
+        color: ForgotPasswordScreen.softBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.withOpacity(0.1)),
       ),
       child: TextField(
         controller: controller,
-        style: const TextStyle(fontSize: 14),
+        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: ForgotPasswordScreen.textDark),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
-          prefixIcon: Icon(prefixIcon, color: Colors.grey, size: 20),
+          hintStyle: TextStyle(color: ForgotPasswordScreen.textGrey.withOpacity(0.5), fontSize: 14, fontWeight: FontWeight.w500),
+          prefixIcon: Icon(prefixIcon, color: ForgotPasswordScreen.navy.withOpacity(0.5), size: 20),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+          contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
         ),
       ),
     );
@@ -271,29 +337,48 @@ Terima kasih.
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: ForgotPasswordScreen.softInput.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: ForgotPasswordScreen.gold.withOpacity(0.2)),
       ),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 4,
-              decoration: BoxDecoration(
-                color: ForgotPasswordScreen.gold,
-                borderRadius: BorderRadius.circular(2),
-              ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: ForgotPasswordScreen.gold.withOpacity(0.1),
+              shape: BoxShape.circle,
             ),
-            const SizedBox(width: 16),
-            const Expanded(
-              child: Text(
-                'Data yang Anda masukkan akan diverifikasi oleh Admin. Pastikan data sesuai dengan yang terdaftar di database gereja.',
-                style: TextStyle(color: ForgotPasswordScreen.textDark, fontSize: 13, height: 1.6),
-              ),
+            child: const Icon(Icons.verified_user_rounded, color: ForgotPasswordScreen.gold, size: 20),
+          ),
+          const SizedBox(width: 16),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Proses Verifikasi',
+                  style: TextStyle(
+                    color: ForgotPasswordScreen.textDark,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Data Anda akan diverifikasi oleh Admin GPdI Sibulele sebelum instruksi reset password dikirimkan.',
+                  style: TextStyle(
+                    color: ForgotPasswordScreen.textGrey,
+                    fontSize: 12,
+                    height: 1.5,
+                    fontWeight: FontWeight.w500
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -302,20 +387,20 @@ Terima kasih.
     return Column(
       children: [
         Text(
-          'GPDI Sibulele',
-          style: GoogleFonts.merriweather(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-            color: ForgotPasswordScreen.navy,
+          'Butuh bantuan lain?',
+          style: TextStyle(
+            color: ForgotPasswordScreen.textGrey.withOpacity(0.8),
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(height: 20),
-        Text(
-          '© 2024 GPDI SIBULELE. ALL RIGHTS RESERVED.',
+        const SizedBox(height: 8),
+        const Text(
+          'sekretariat@gpdisibulele.org',
           style: TextStyle(
-            color: Colors.grey.withOpacity(0.8),
-            fontSize: 10,
-            letterSpacing: 0.5,
+            color: ForgotPasswordScreen.navy,
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
           ),
         ),
       ],

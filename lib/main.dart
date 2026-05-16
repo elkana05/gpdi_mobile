@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
-// Import router dan provider
 import 'core/router/app_router.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/auth/providers/user_provider.dart';
@@ -12,8 +12,6 @@ import 'features/jemaataktif/providers/admin_provider.dart';
 import 'features/jemaatpublik/providers/content_provider.dart';
 import 'features/jemaatpublik/providers/event_provider.dart';
 
-/// Class untuk mengizinkan koneksi HTTP ke server lokal (Docker)
-/// yang tidak menggunakan sertifikat SSL (HTTPS) resmi.
 class MyHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
@@ -24,16 +22,10 @@ class MyHttpOverrides extends HttpOverrides {
 }
 
 void main() async {
-  // 1. Inisialisasi binding Flutter
   WidgetsFlutterBinding.ensureInitialized();
-
-  // 2. Inisialisasi format tanggal (intl)
   await initializeDateFormatting('id_ID', null);
-
-  // 3. Terapkan bypass SSL untuk tahap development Docker
   HttpOverrides.global = MyHttpOverrides();
 
-  // 4. Inisialisasi AuthProvider dan cek sesi login yang tersimpan
   final authProvider = AuthProvider();
   await authProvider.checkAuth();
 
@@ -60,42 +52,32 @@ class GPdISibuleleApp extends StatelessWidget {
       title: 'GPdI Sibulele',
       debugShowCheckedModeBanner: false,
       routerConfig: appRouter,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('id', 'ID'),
+        Locale('en', 'US'),
+      ],
+      locale: const Locale('id', 'ID'),
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF05066F), // Navy GPdI
+          seedColor: const Color(0xFF05066F),
           primary: const Color(0xFF05066F),
-          secondary: const Color(0xFFC5A327), // Gold GPdI
+          secondary: const Color(0xFFC5A327),
         ),
-        textTheme: GoogleFonts.montserratTextTheme(
-          Theme.of(context).textTheme,
-        ),
+        textTheme: GoogleFonts.montserratTextTheme(Theme.of(context).textTheme),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF05066F),
             foregroundColor: Colors.white,
-            minimumSize: const Size(double.infinity, 54),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            // Perbaikan: Jangan gunakan double.infinity di sini karena merusak tombol di dalam Row
+            minimumSize: const Size(88, 54),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             elevation: 2,
-          ),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: Colors.grey[50],
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey[300]!),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey[200]!),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF05066F), width: 1.5),
           ),
         ),
       ),

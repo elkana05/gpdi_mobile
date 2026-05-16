@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import '../../../core/constants/api_constants.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../features/jemaataktif/services/event_service.dart';
 
 class PastorAgendaScreen extends StatefulWidget {
@@ -19,26 +19,26 @@ class _PastorAgendaScreenState extends State<PastorAgendaScreen> with SingleTick
   bool _isLoading = false;
   List<dynamic> _dataList = [];
   List<dynamic> _rayonsList = [];
-  String _errorMsg = '';
-
   bool _isSubmitting = false;
   final _formKey = GlobalKey<FormState>();
   Map<String, dynamic> _formData = {};
   String? _fotoBase64;
 
+  final TextEditingController _dateController = TextEditingController();
+  final TextEditingController _startTimeController = TextEditingController();
+  final TextEditingController _endTimeController = TextEditingController();
+
   static const Color navy = Color(0xFF05066F);
   static const Color gold = Color(0xFFC5A327);
-  static const Color redAccent = Color(0xFFD71313);
-  static const Color slate = Color(0xFF64748B);
+  static const Color softBg = Color(0xFFF8F9FE);
+  static const Color textGrey = Color(0xFF7A7C92);
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
     _tabController.addListener(() {
-      if (!_tabController.indexIsChanging) {
-        _fetchData();
-      }
+      if (!_tabController.indexIsChanging) _fetchData();
     });
     _fetchRayonsDropdown();
     _fetchData();
@@ -47,28 +47,24 @@ class _PastorAgendaScreenState extends State<PastorAgendaScreen> with SingleTick
   @override
   void dispose() {
     _tabController.dispose();
+    _dateController.dispose();
+    _startTimeController.dispose();
+    _endTimeController.dispose();
     super.dispose();
   }
 
   Future<void> _fetchRayonsDropdown() async {
     try {
       final res = await _eventService.getRayons();
-      if (mounted) {
-        setState(() {
-          _rayonsList = res;
-        });
-      }
+      if (mounted) setState(() => _rayonsList = res);
     } catch (e) {
-      debugPrint("Gagal muat rayon: $e");
+      debugPrint("Gagal muat dropdown rayon: $e");
     }
   }
 
   Future<void> _fetchData() async {
     if (!mounted) return;
-    setState(() {
-      _isLoading = true;
-      _errorMsg = '';
-    });
+    setState(() => _isLoading = true);
     try {
       List<dynamic> data = [];
       switch (_tabController.index) {
@@ -77,30 +73,9 @@ class _PastorAgendaScreenState extends State<PastorAgendaScreen> with SingleTick
         case 2: data = await _eventService.getManageRayonSchedules(); break;
         case 3: data = await _eventService.getRayons(); break;
       }
-
-      if (mounted) {
-        setState(() {
-          _dataList = data;
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() { _dataList = data; _isLoading = false; });
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMsg = "Gagal memuat data: $e";
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  String _getTabTitle() {
-    switch (_tabController.index) {
-      case 0: return 'Ibadah';
-      case 1: return 'Kegiatan';
-      case 2: return 'Jadwal Rayon';
-      case 3: return 'Rayon';
-      default: return '';
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -115,7 +90,7 @@ class _PastorAgendaScreenState extends State<PastorAgendaScreen> with SingleTick
         'title': item['title'] ?? '',
         'description': item['description'] ?? '',
         'location': item['location'] ?? '',
-        'event_date': item['event_date']?.toString().split('T')[0] ?? '',
+        'event_date': item['event_date'] != null ? item['event_date'].toString().split('T')[0] : '',
         'start_time': item['start_time'] ?? '',
         'end_time': item['end_time'] ?? '',
         'status_publish': item['status_publish'] ?? 'published',
@@ -124,80 +99,352 @@ class _PastorAgendaScreenState extends State<PastorAgendaScreen> with SingleTick
       };
     } else {
       _formData = {
-        'nama_rayon': '',
-        'keterangan': '',
-        'rayon_id': '',
-        'title': '',
-        'description': '',
-        'location': '',
-        'event_date': '',
-        'start_time': '',
-        'end_time': '',
-        'status_publish': 'published',
-        'category': 'Ibadah Raya Minggu',
-        'day_of_week': 'Minggu',
+        'nama_rayon': '', 'keterangan': '', 'rayon_id': '', 'title': '', 'description': '', 'location': '',
+        'event_date': '', 'start_time': '', 'end_time': '',
+        'status_publish': 'published', 'category': 'Ibadah Raya Minggu', 'day_of_week': 'Minggu',
       };
     }
+    _dateController.text = _formData['event_date'] ?? '';
+    _startTimeController.text = _formData['start_time'] ?? '';
+    _endTimeController.text = _formData['end_time'] ?? '';
     _showFormDialog();
   }
 
-  Future<void> _handleSubmit() async {
+  Future<void> _pickImage(StateSetter setModalState) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    if (pickedFile != null) {
+      final bytes = await pickedFile.readAsBytes();
+      setModalState(() {
+        _fotoBase64 = 'data:image/png;base64,${base64Encode(bytes)}';
+      });
+    }
+  }
+
+  Future<void> _selectDate(BuildContext context, StateSetter setModalState) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null) {
+      setModalState(() {
+        _dateController.text = DateFormat('yyyy-MM-dd').format(picked);
+        _formData['event_date'] = _dateController.text;
+      });
+    }
+  }
+
+  Future<void> _selectTime(BuildContext context, TextEditingController controller, String key, StateSetter setModalState) async {
+    final TimeOfDay? picked = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+    if (picked != null) {
+      setModalState(() {
+        final now = DateTime.now();
+        final dt = DateTime(now.year, now.month, now.day, picked.hour, picked.minute);
+        controller.text = DateFormat('HH:mm').format(dt);
+        _formData[key] = controller.text;
+      });
+    }
+  }
+
+  Future<void> _handleSubmit(StateSetter setModalState) async {
     if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
 
+    setModalState(() => _isSubmitting = true);
     setState(() => _isSubmitting = true);
+
     try {
       Map<String, dynamic> payload = Map<String, dynamic>.from(_formData);
+      if (_tabController.index == 1 && _fotoBase64 != null) payload['gambar'] = _fotoBase64;
+
       int? id = _formData['id'];
-
-      if (_tabController.index == 1 && _fotoBase64 != null) {
-        payload['gambar'] = _fotoBase64;
-      }
-
       switch (_tabController.index) {
         case 0: await _eventService.saveWorship(payload, id: id); break;
         case 1: await _eventService.saveActivity(payload, id: id); break;
         case 2: await _eventService.saveRayonSchedule(payload, id: id); break;
         case 3: await _eventService.saveRayon(payload, id: id); break;
       }
-
-      if (mounted) {
-        Navigator.pop(context);
-        _fetchData();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Data berhasil disimpan'), backgroundColor: Colors.green)
-        );
-      }
+      if (mounted) { Navigator.pop(context); _fetchData(); }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal menyimpan: $e'), backgroundColor: redAccent)
-        );
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal: $e')));
     } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+      if (mounted) {
+        setModalState(() => _isSubmitting = false);
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  void _showFormDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Form ${_getTabTitle()}', style: GoogleFonts.montserrat(fontSize: 18, fontWeight: FontWeight.bold, color: navy)),
+                const SizedBox(height: 20),
+                Form(key: _formKey, child: Column(children: _buildFieldsByTab(setModalState))),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: _isSubmitting ? null : () => _handleSubmit(setModalState),
+                    style: ElevatedButton.styleFrom(backgroundColor: navy, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                    child: _isSubmitting ? const CircularProgressIndicator(color: Colors.white) : const Text('SIMPAN DATA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal', style: TextStyle(color: textGrey))),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildFieldsByTab(StateSetter setModalState) {
+    int idx = _tabController.index;
+    if (idx == 3) {
+      return [
+        _buildInput('Nama Rayon', (v) => _formData['nama_rayon'] = v, Icons.groups, initialValue: _formData['nama_rayon'], required: true),
+        _buildInput('Keterangan', (v) => _formData['keterangan'] = v, Icons.info, initialValue: _formData['keterangan'], maxLines: 3),
+      ];
+    }
+    if (idx == 0) {
+      return [
+        _buildDropdown('Kategori Ibadah', _formData['category'], [
+          'Ibadah Raya Minggu',
+          'Ibadah Sekolah Minggu',
+          'Ibadah Pemuda & Remaja',
+          'Ibadah Wanita (Pelwap)',
+          'Doa Malam Jemaat'
+        ], (v) => setModalState(() => _formData['category'] = v)),
+        _buildDropdown('Hari Pelaksanaan', _formData['day_of_week'], ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'], (v) => setModalState(() => _formData['day_of_week'] = v)),
+        _buildInput('Judul Ibadah / Sesi', (v) => _formData['title'] = v, Icons.title, initialValue: _formData['title'], required: true),
+        _buildPickerInput('Tanggal (Opsional)', _dateController, () => _selectDate(context, setModalState), required: false),
+        Row(
+          children: [
+            Expanded(child: _buildPickerInput('Jam Mulai', _startTimeController, () => _selectTime(context, _startTimeController, 'start_time', setModalState))),
+            const SizedBox(width: 12),
+            Expanded(child: _buildPickerInput('Jam Selesai', _endTimeController, () => _selectTime(context, _endTimeController, 'end_time', setModalState), required: false)),
+          ],
+        ),
+        _buildInput('Lokasi', (v) => _formData['location'] = v, Icons.location_on, initialValue: _formData['location'], required: true),
+        _buildDropdown('Status Publish', _formData['status_publish'], ['published', 'draft'], (v) => setModalState(() => _formData['status_publish'] = v)),
+        _buildInput('Keterangan Tambahan', (v) => _formData['description'] = v, Icons.info_outline, initialValue: _formData['description'], maxLines: 2),
+      ];
+    }
+    if (idx == 1) {
+      return [
+        _buildInput('Judul Acara / Kegiatan', (v) => _formData['title'] = v, Icons.event_note, initialValue: _formData['title'], required: true),
+        _buildPickerInput('Tanggal Kegiatan', _dateController, () => _selectDate(context, setModalState)),
+        Row(
+          children: [
+            Expanded(child: _buildPickerInput('Jam Mulai', _startTimeController, () => _selectTime(context, _startTimeController, 'start_time', setModalState))),
+            const SizedBox(width: 12),
+            Expanded(child: _buildPickerInput('Jam Selesai', _endTimeController, () => _selectTime(context, _endTimeController, 'end_time', setModalState), required: false)),
+          ],
+        ),
+        _buildInput('Lokasi', (v) => _formData['location'] = v, Icons.location_on, initialValue: _formData['location'], required: true),
+        _buildInput('Deskripsi Kegiatan', (v) => _formData['description'] = v, Icons.description, initialValue: _formData['description'], maxLines: 3),
+        const SizedBox(height: 12),
+        _buildImagePicker(setModalState),
+        _buildDropdown('Status Publish', _formData['status_publish'], ['published', 'draft'], (v) => setModalState(() => _formData['status_publish'] = v)),
+      ];
+    }
+    return [
+      _buildDropdown('Pilih Rayon Target', _formData['rayon_id'], _rayonsList.map((e) => e['id'].toString()).toList(), (v) => setModalState(() => _formData['rayon_id'] = v), labels: _rayonsList.map((e) => e['nama_rayon'].toString()).toList()),
+      _buildInput('Judul Kegiatan Rayon', (v) => _formData['title'] = v, Icons.title, initialValue: _formData['title'], required: true),
+      _buildPickerInput('Tanggal', _dateController, () => _selectDate(context, setModalState)),
+      Row(
+        children: [
+          Expanded(child: _buildPickerInput('Jam Mulai', _startTimeController, () => _selectTime(context, _startTimeController, 'start_time', setModalState))),
+          const SizedBox(width: 12),
+          Expanded(child: _buildPickerInput('Jam Selesai', _endTimeController, () => _selectTime(context, _endTimeController, 'end_time', setModalState), required: false)),
+        ],
+      ),
+      _buildInput('Lokasi / Alamat', (v) => _formData['location'] = v, Icons.location_on, initialValue: _formData['location']),
+      _buildInput('Keterangan Tambahan', (v) => _formData['description'] = v, Icons.info_outline, initialValue: _formData['description'], maxLines: 2),
+    ];
+  }
+
+  Widget _buildInput(String label, Function(String?) onSaved, IconData icon, {String? initialValue, bool required = false, int maxLines = 1}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: TextFormField(
+        initialValue: initialValue,
+        maxLines: maxLines,
+        decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon, color: navy), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+        validator: required ? (v) => (v == null || v.isEmpty) ? 'Wajib diisi' : null : null,
+        onSaved: onSaved,
+      ),
+    );
+  }
+
+  Widget _buildPickerInput(String label, TextEditingController controller, VoidCallback onTap, {bool required = true}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: TextFormField(
+        controller: controller,
+        readOnly: true,
+        onTap: onTap,
+        decoration: InputDecoration(labelText: label, prefixIcon: const Icon(Icons.calendar_today, color: navy), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+        validator: required ? (v) => (v == null || v.isEmpty) ? 'Wajib' : null : null,
+      ),
+    );
+  }
+
+  Widget _buildDropdown(String label, String? value, List<String> items, Function(String?) onChanged, {List<String>? labels}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: DropdownButtonFormField<String>(
+        value: (value == null || value.isEmpty || !items.contains(value)) ? null : value,
+        isExpanded: true,
+        decoration: InputDecoration(labelText: label, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+        items: List.generate(items.length, (i) => DropdownMenuItem(value: items[i], child: Text(labels != null ? labels[i] : items[i]))),
+        onChanged: onChanged,
+        validator: (v) => v == null ? 'Pilih salah satu' : null,
+      ),
+    );
+  }
+
+  Widget _buildImagePicker(StateSetter setModalState) {
+    return GestureDetector(
+      onTap: () => _pickImage(setModalState),
+      child: Container(
+        height: 120, width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(color: softBg, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade300)),
+        child: _fotoBase64 != null
+          ? ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.memory(base64Decode(_fotoBase64!.split(',').last), fit: BoxFit.cover))
+          : const Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.camera_alt, color: navy), Text('Pilih Foto Kegiatan', style: TextStyle(fontSize: 12))]),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: softBg,
+      appBar: AppBar(
+        title: Text('Manajemen Agenda', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, color: navy, fontSize: 18)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        bottom: TabBar(
+          controller: _tabController,
+          isScrollable: true,
+          labelColor: navy, unselectedLabelColor: textGrey,
+          indicatorColor: gold,
+          tabs: const [Tab(text: 'IBADAH'), Tab(text: 'KEGIATAN'), Tab(text: 'JADWAL RAYON'), Tab(text: 'RAYON')],
+        ),
+      ),
+      body: Column(
+        children: [
+          _buildActionHeader(),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator(color: navy))
+                : RefreshIndicator(
+                    onRefresh: _fetchData,
+                    color: navy,
+                    child: _dataList.isEmpty
+                        ? _buildEmptyState()
+                        : ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: _dataList.length,
+                            itemBuilder: (context, index) => _buildDataCard(_dataList[index]),
+                          ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionHeader() {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Daftar ${_getTabTitle()}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: navy)),
+            const Text('Kelola operasional gereja', style: TextStyle(fontSize: 12, color: textGrey)),
+          ]),
+          ElevatedButton.icon(
+            onPressed: () => _handleOpenModal(),
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Tambah'),
+            style: ElevatedButton.styleFrom(backgroundColor: navy, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDataCard(dynamic item) {
+    String title = item['title'] ?? item['nama_rayon'] ?? '-';
+    String sub = item['location'] ?? item['description'] ?? item['keterangan'] ?? '';
+    if (_tabController.index == 0) sub = "${item['day_of_week'] ?? ''} - ${item['start_time'] ?? ''}";
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15), side: BorderSide(color: Colors.grey.shade200)),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(color: navy.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+          child: Icon(_getTabIcon(), color: navy),
+        ),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+        subtitle: Text(sub, style: const TextStyle(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(visualDensity: VisualDensity.compact, icon: const Icon(Icons.edit_outlined, color: Colors.orange, size: 20), onPressed: () => _handleOpenModal(item)),
+            IconButton(visualDensity: VisualDensity.compact, icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20), onPressed: () => _handleDelete(item)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _getTabIcon() {
+    switch (_tabController.index) {
+      case 0: return Icons.church;
+      case 1: return Icons.event;
+      case 2: return Icons.calendar_month;
+      default: return Icons.groups;
     }
   }
 
   Future<void> _handleDelete(dynamic item) async {
-    String label = item['title'] ?? item['nama_rayon'] ?? 'data ini';
     int id = item['id'];
-
     bool confirm = await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Konfirmasi Hapus'),
-        content: Text('Hapus data "$label" secara permanen?'),
+        title: const Text('Hapus Data?'),
+        content: const Text('Data ini akan dihapus secara permanen.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Hapus', style: TextStyle(color: redAccent))
-          ),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Hapus', style: TextStyle(color: Colors.red))),
         ],
       ),
     ) ?? false;
-
     if (confirm) {
       try {
         switch (_tabController.index) {
@@ -207,402 +454,26 @@ class _PastorAgendaScreenState extends State<PastorAgendaScreen> with SingleTick
           case 3: await _eventService.deleteRayon(id); break;
         }
         _fetchData();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Data berhasil dihapus'), backgroundColor: Colors.green));
-        }
       } catch (e) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Gagal menghapus: $e"), backgroundColor: redAccent));
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Gagal hapus: $e")));
       }
     }
   }
 
-  Future<void> _pickImage(StateSetter setModalState) async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery, maxWidth: 800, imageQuality: 80);
-    if (image != null) {
-      final bytes = await image.readAsBytes();
-      final String base64Image = 'data:image/${image.path.split('.').last};base64,${base64Encode(bytes)}';
-      setModalState(() {
-        _fotoBase64 = base64Image;
-      });
+  Widget _buildEmptyState() {
+    return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+      Icon(Icons.inbox_outlined, size: 60, color: Colors.grey.shade300),
+      const SizedBox(height: 10),
+      Text('Belum ada data ${_getTabTitle()}', style: TextStyle(color: Colors.grey.shade500)),
+    ]));
+  }
+
+  String _getTabTitle() {
+    switch (_tabController.index) {
+      case 0: return 'Ibadah';
+      case 1: return 'Kegiatan';
+      case 2: return 'Jadwal Rayon';
+      default: return 'Rayon';
     }
-  }
-
-  Future<void> _selectDate(BuildContext context, StateSetter setModalState) async {
-    DateTime initialDate = DateTime.tryParse(_formData['event_date'] ?? '') ?? DateTime.now();
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: initialDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
-    );
-    if (picked != null) {
-      setModalState(() {
-        _formData['event_date'] = DateFormat('yyyy-MM-dd').format(picked);
-      });
-    }
-  }
-
-  void _showFormDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(
-            _formData['id'] == null ? 'Tambah ${_getTabTitle()}' : 'Edit ${_getTabTitle()}',
-            style: const TextStyle(fontWeight: FontWeight.bold, color: navy)
-          ),
-          content: SizedBox(
-            width: MediaQuery.of(context).size.width * 0.9,
-            child: SingleChildScrollView(
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: _buildFieldsByTab(setModalState),
-                ),
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: _isSubmitting ? null : () => Navigator.pop(context), child: const Text('Batal')),
-            ElevatedButton(
-              onPressed: _isSubmitting ? null : _handleSubmit,
-              style: ElevatedButton.styleFrom(backgroundColor: navy, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-              child: Text(_isSubmitting ? 'Menyimpan...' : 'Simpan Data', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  List<Widget> _buildFieldsByTab(StateSetter setModalState) {
-    int idx = _tabController.index;
-
-    if (idx == 3) { // Rayon
-      return [
-        _buildTextField('Nama Rayon', (v) => _formData['nama_rayon'] = v, initialValue: _formData['nama_rayon'], required: true),
-        const SizedBox(height: 12),
-        _buildTextField('Keterangan', (v) => _formData['keterangan'] = v, initialValue: _formData['keterangan'], maxLines: 2),
-      ];
-    }
-
-    return [
-      if (idx == 2) ...[ // Jadwal Rayon
-        DropdownButtonFormField<String>(
-          key: const ValueKey('dropdown_rayon'),
-          isExpanded: true,
-          value: _rayonsList.any((r) => r['id'].toString() == _formData['rayon_id'].toString()) ? _formData['rayon_id'].toString() : null,
-          decoration: const InputDecoration(labelText: 'Pilih Rayon', border: OutlineInputBorder()),
-          items: _rayonsList.map((r) => DropdownMenuItem(
-            value: r['id'].toString(),
-            child: Text(r['nama_rayon'] ?? '-', overflow: TextOverflow.ellipsis)
-          )).toList(),
-          onChanged: (v) => setModalState(() => _formData['rayon_id'] = v),
-          validator: (v) => (v == null || v.isEmpty) ? 'Pilih rayon target' : null,
-        ),
-        const SizedBox(height: 12),
-      ],
-      if (idx == 0) ...[ // Ibadah
-        Row(
-          children: [
-            Expanded(
-              child: DropdownButtonFormField<String>(
-                key: const ValueKey('dropdown_category'),
-                isExpanded: true,
-                value: _formData['category'],
-                decoration: const InputDecoration(labelText: 'Kategori', border: OutlineInputBorder()),
-                items: ['Ibadah Raya Minggu', 'Ibadah Sekolah Minggu', 'Ibadah Pemuda & Remaja', 'Ibadah Wanita (Pelwap)', 'Doa Malam Jemaat']
-                    .map((c) => DropdownMenuItem(
-                      value: c,
-                      child: Text(c, style: const TextStyle(fontSize: 10), overflow: TextOverflow.ellipsis)
-                    )).toList(),
-                onChanged: (v) => setModalState(() => _formData['category'] = v),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: DropdownButtonFormField<String>(
-                key: const ValueKey('dropdown_day'),
-                isExpanded: true,
-                value: _formData['day_of_week'],
-                decoration: const InputDecoration(labelText: 'Hari', border: OutlineInputBorder()),
-                items: ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
-                    .map((h) => DropdownMenuItem(
-                      value: h,
-                      child: Text(h, style: const TextStyle(fontSize: 10))
-                    )).toList(),
-                onChanged: (v) => setModalState(() => _formData['day_of_week'] = v),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-      ],
-      _buildTextField('Judul / Sesi Acara', (v) => _formData['title'] = v, initialValue: _formData['title'], required: true),
-      const SizedBox(height: 12),
-      if (idx == 1) ...[ // Kegiatan
-        _buildImagePicker(setModalState),
-        const SizedBox(height: 12),
-      ],
-      Row(
-        children: [
-          Expanded(
-            child: InkWell(
-              onTap: () => _selectDate(context, setModalState),
-              child: IgnorePointer(
-                child: _buildTextField(
-                  idx == 0 ? 'Tanggal (Opsional)' : 'Tanggal',
-                  (v) => _formData['event_date'] = v,
-                  initialValue: _formData['event_date'],
-                  hint: 'Pilih Tanggal',
-                  required: idx != 0
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _buildTextField('Lokasi', (v) => _formData['location'] = v, initialValue: _formData['location'], required: true),
-          ),
-        ],
-      ),
-      const SizedBox(height: 12),
-      Row(
-        children: [
-          Expanded(child: _buildTextField('Jam Mulai', (v) => _formData['start_time'] = v, initialValue: _formData['start_time'], hint: 'HH:MM', required: true)),
-          const SizedBox(width: 12),
-          Expanded(child: _buildTextField('Jam Selesai', (v) => _formData['end_time'] = v, initialValue: _formData['end_time'], hint: 'HH:MM')),
-        ],
-      ),
-      if (idx != 2) ...[
-        const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          key: const ValueKey('dropdown_status'),
-          isExpanded: true,
-          value: _formData['status_publish'],
-          decoration: const InputDecoration(labelText: 'Status', border: OutlineInputBorder()),
-          items: const [
-            DropdownMenuItem(value: 'published', child: Text('Diterbitkan')),
-            DropdownMenuItem(value: 'draft', child: Text('Draft')),
-          ],
-          onChanged: (v) => setModalState(() => _formData['status_publish'] = v),
-        ),
-      ],
-      const SizedBox(height: 12),
-      _buildTextField('Keterangan Tambahan', (v) => _formData['description'] = v, initialValue: _formData['description'], maxLines: 3),
-    ];
-  }
-
-  Widget _buildTextField(String label, Function(String?) onSaved, {String? initialValue, String? hint, bool required = false, int maxLines = 1}) {
-    return TextFormField(
-      key: ValueKey('input_${_tabController.index}_$label'),
-      initialValue: initialValue,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        border: const OutlineInputBorder(),
-        contentPadding: const EdgeInsets.all(12),
-        labelStyle: const TextStyle(fontSize: 12),
-      ),
-      maxLines: maxLines,
-      onSaved: onSaved,
-      validator: required ? (v) => (v == null || v.isEmpty) ? 'Wajib diisi' : null : null,
-    );
-  }
-
-  Widget _buildImagePicker(StateSetter setModalState) {
-    return InkWell(
-      onTap: () => _pickImage(setModalState),
-      child: Container(
-        height: 120,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: Colors.blue[50],
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.blue[100]!),
-        ),
-        child: _fotoBase64 != null
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.memory(base64Decode(_fotoBase64!.split(',').last), fit: BoxFit.cover),
-              )
-            : const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.add_a_photo_rounded, color: Colors.blue, size: 32),
-                  Text('Unggah Gambar Kegiatan', style: TextStyle(color: Colors.blue, fontSize: 12, fontWeight: FontWeight.bold)),
-                  Text('*Maksimal 2MB', style: TextStyle(color: Colors.blueGrey, fontSize: 10)),
-                ],
-              ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FD),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        surfaceTintColor: Colors.white,
-        title: const Text('Manajemen Agenda', style: TextStyle(color: navy, fontWeight: FontWeight.bold, fontSize: 18)),
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          labelColor: navy,
-          unselectedLabelColor: slate,
-          indicatorColor: navy,
-          indicatorWeight: 3,
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-          tabs: const [Tab(text: 'IBADAH'), Tab(text: 'KEGIATAN'), Tab(text: 'JADWAL RAYON'), Tab(text: 'RAYON')],
-        ),
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Daftar ${_getTabTitle()}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-                ElevatedButton.icon(
-                  onPressed: () => _handleOpenModal(),
-                  icon: const Icon(Icons.add, size: 18, color: Colors.white),
-                  label: const Text('Tambah', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: navy,
-                    minimumSize: const Size(0, 40),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: navy))
-                : _errorMsg.isNotEmpty
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            mainAxisAlignment: Main WITHOUT ANY CHANGE
-                            center,
-                            children: [
-                              const Icon(Icons.error_outline, color: redAccent, size: 48),
-                              const SizedBox(height: 12),
-                              Text(
-                                _errorMsg,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(color: redAccent, fontSize: 13),
-                              ),
-                              const SizedBox(height: 16),
-                              ElevatedButton(
-                                onPressed: _fetchData,
-                                child: const Text('Coba Lagi'),
-                              )
-                            ],
-                          ),
-                        ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _fetchData,
-                        child: _dataList.isEmpty
-                            ? const Center(child: Text("Belum ada data."))
-                            : ListView.builder(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                itemCount: _dataList.length,
-                                itemBuilder: (context, index) => _buildDataCard(_dataList[index]),
-                              ),
-                      ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDataCard(dynamic item) {
-    int activeIdx = _tabController.index;
-    String title = activeIdx == 3 ? (item['nama_rayon'] ?? '-') : (item['title'] ?? '-');
-    String sub = '-';
-
-    try {
-      if (activeIdx == 3) {
-        sub = item['keterangan'] ?? '-';
-      } else if (item['event_date'] != null) {
-        sub = DateFormat('d MMM yyyy', 'id').format(DateTime.parse(item['event_date'].toString()));
-      } else {
-        sub = item['day_of_week'] ?? '-';
-      }
-    } catch (e) {
-      sub = item['day_of_week'] ?? '-';
-    }
-
-    if (activeIdx == 0) {
-      sub = "${item['category'] ?? '-'} | ${item['day_of_week']}";
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))]
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: navy), maxLines: 1, overflow: TextOverflow.ellipsis),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 6),
-            Text(sub, style: const TextStyle(fontSize: 13, color: Colors.black87, fontWeight: FontWeight.w500)),
-            if (activeIdx != 3) ...[
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  const Icon(Icons.location_on_outlined, size: 12, color: slate),
-                  const SizedBox(width: 4),
-                  Expanded(child: Text(item['location'] ?? '-', style: const TextStyle(fontSize: 12, color: slate), maxLines: 1)),
-                ],
-              ),
-              if (item['status_publish'] != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: item['status_publish'] == 'published' ? navy.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4)
-                    ),
-                    child: Text(
-                      item['status_publish'].toString().toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                        color: item['status_publish'] == 'published' ? navy : Colors.orange
-                      )
-                    ),
-                  ),
-                ),
-            ],
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(icon: const Icon(Icons.edit_outlined, color: Colors.amber, size: 22), onPressed: () => _handleOpenModal(item)),
-            IconButton(icon: const Icon(Icons.delete_outline_rounded, color: redAccent, size: 22), onPressed: () => _handleDelete(item)),
-          ],
-        ),
-      ),
-    );
   }
 }

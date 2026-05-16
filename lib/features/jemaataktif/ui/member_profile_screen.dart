@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../auth/providers/user_provider.dart';
 import '../../auth/models/family_member_model.dart';
 import 'member_drawer.dart';
 import 'member_bottom_navigation.dart';
-
-// Top-level constants to ensure accessibility and valid constant values
-const Color _navy = Color(0xFF05066F);
-const Color _redAccent = Color(0xFFD71313);
-const Color _sectionGray = Color(0xFFEEEDED);
 
 class MemberProfileScreen extends StatefulWidget {
   const MemberProfileScreen({super.key});
@@ -18,6 +14,13 @@ class MemberProfileScreen extends StatefulWidget {
 }
 
 class _MemberProfileScreenState extends State<MemberProfileScreen> {
+  static const Color navy = Color(0xFF05066F);
+  static const Color gold = Color(0xFFC5A327);
+  static const Color redAccent = Color(0xFFD71313);
+  static const Color softBg = Color(0xFFF8F9FE);
+  static const Color textDark = Color(0xFF1A1A2E);
+  static const Color textGrey = Color(0xFF7A7C92);
+
   final _formKey = GlobalKey<FormState>();
   final _passwordFormKey = GlobalKey<FormState>();
 
@@ -61,7 +64,7 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
         phoneController.text = p.phoneNumber ?? "";
         addressController.text = p.address ?? "";
         emailController.text = p.email;
-        rayonController.text = p.rayonId != null ? "Rayon ID: ${p.rayonId}" : "Belum Terdaftar";
+        rayonController.text = p.rayonId != null ? "Rayon ${p.rayonId}" : "Belum Terdaftar";
         _isInitialized = true;
       });
     }
@@ -93,7 +96,12 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
 
     if (success) {
       messenger.showSnackBar(
-        const SnackBar(content: Text("Profil berhasil diperbarui!"), backgroundColor: Colors.green),
+        SnackBar(
+          content: Text("Profil berhasil diperbarui!", style: GoogleFonts.montserrat(fontWeight: FontWeight.w600)),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
       );
     } else {
       _showError(userProvider.errorMessage);
@@ -116,7 +124,12 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
       newPassController.clear();
       confirmPassController.clear();
       messenger.showSnackBar(
-        const SnackBar(content: Text("Password berhasil diperbarui!"), backgroundColor: Colors.green),
+        SnackBar(
+          content: Text("Password berhasil diperbarui!", style: GoogleFonts.montserrat(fontWeight: FontWeight.w600)),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
       );
     } else {
       _showError(userProvider.errorMessage);
@@ -127,12 +140,10 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      backgroundColor: Colors.transparent,
       builder: (modalContext) => _FamilyMemberModal(
         member: member,
         onSave: (data) async {
-          // Gunakan context utama untuk provider agar tetap valid
           final userProvider = Provider.of<UserProvider>(context, listen: false);
           bool success = member != null
               ? await userProvider.updateFamilyMember(member.id!, data)
@@ -152,11 +163,18 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Hapus Anggota"),
-        content: const Text("Yakin ingin menghapus anggota keluarga ini?"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text("Hapus Anggota", style: GoogleFonts.montserrat(fontWeight: FontWeight.w800, color: navy)),
+        content: Text("Yakin ingin menghapus anggota keluarga ini?", style: GoogleFonts.montserrat(fontWeight: FontWeight.w500)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Batal")),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Hapus", style: TextStyle(color: _redAccent))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text("Batal", style: GoogleFonts.montserrat(color: textGrey, fontWeight: FontWeight.bold)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text("Hapus", style: GoogleFonts.montserrat(color: redAccent, fontWeight: FontWeight.bold)),
+          ),
         ],
       ),
     );
@@ -166,33 +184,68 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       final success = await userProvider.deleteFamilyMember(id);
       if (success && mounted) {
-        messenger.showSnackBar(const SnackBar(content: Text("Data keluarga dihapus")));
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text("Data keluarga dihapus", style: GoogleFonts.montserrat(fontWeight: FontWeight.w600)),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
       }
     }
   }
 
   void _showError(String msg) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: _redAccent));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg, style: GoogleFonts.montserrat(fontWeight: FontWeight.w600)),
+        backgroundColor: redAccent,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: const MemberDrawer(activeMenu: MemberDrawerMenu.profil),
-      backgroundColor: Colors.white,
+      backgroundColor: softBg,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        surfaceTintColor: Colors.white,
-        iconTheme: const IconThemeData(color: _navy),
-        title: const Text("Profil Saya", style: TextStyle(color: _navy, fontSize: 17, fontWeight: FontWeight.w700)),
+        scrolledUnderElevation: 0,
+        leading: Builder(
+          builder: (context) {
+            return IconButton(
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: navy.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.menu_rounded, color: navy, size: 22),
+              ),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+            );
+          },
+        ),
+        title: Text(
+          'Profil Saya',
+          style: GoogleFonts.montserrat(
+            color: navy,
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.5,
+          ),
+        ),
         centerTitle: true,
       ),
       body: Consumer<UserProvider>(
         builder: (context, userProvider, child) {
           if (userProvider.isLoading && !_isInitialized) {
-            return const Center(child: CircularProgressIndicator(color: _navy));
+            return const Center(child: CircularProgressIndicator(color: navy));
           }
 
           if (!_isInitialized && userProvider.detailedProfile != null) {
@@ -201,42 +254,43 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
 
           return RefreshIndicator(
             onRefresh: _fetchInitialData,
-            color: _navy,
+            color: navy,
             child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(24, 28, 24, 120),
+              physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text("Profil Saya", style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: _navy)),
-                  const SizedBox(height: 8),
-                  const Text("Kelola informasi pribadi dan data keluarga", style: TextStyle(fontSize: 16, color: Colors.grey)),
+                  _buildHeader(),
+                  const SizedBox(height: 32),
 
-                  _buildSectionBox(
+                  _buildSectionCard(
                     title: "Data Pribadi",
+                    subtitle: "Informasi kontak dan domisili",
                     child: Form(
                       key: _formKey,
                       child: Column(
                         children: [
-                          _buildInput("Nama Lengkap", nameController),
-                          _buildInput("Nomor HP", phoneController),
-                          _buildInput("Alamat", addressController),
-                          _buildInput("Email", emailController, readOnly: true),
-                          _buildInput("Rayon", rayonController, readOnly: true),
-                          const SizedBox(height: 16),
+                          _buildInput("Nama Lengkap", nameController, Icons.person_outline_rounded),
+                          _buildInput("Nomor HP", phoneController, Icons.phone_android_rounded),
+                          _buildInput("Alamat", addressController, Icons.location_on_outlined),
+                          _buildInput("Email", emailController, Icons.alternate_email_rounded, readOnly: true),
+                          _buildInput("Rayon", rayonController, Icons.groups_outlined, readOnly: true),
+                          const SizedBox(height: 24),
                           SizedBox(
                             width: double.infinity,
-                            height: 50,
                             child: ElevatedButton(
                               onPressed: userProvider.isLoading ? null : _handleProfileSubmit,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: _navy,
+                                backgroundColor: navy,
                                 foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                                elevation: 0,
                               ),
                               child: userProvider.isLoading
                                 ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                : const Text("Simpan Perubahan", style: TextStyle(fontWeight: FontWeight.bold)),
+                                : Text("Simpan Perubahan", style: GoogleFonts.montserrat(fontWeight: FontWeight.w800, letterSpacing: 0.5)),
                             ),
                           ),
                         ],
@@ -244,57 +298,59 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
                     ),
                   ),
 
-                  _buildSectionBox(
+                  const SizedBox(height: 32),
+                  _buildSectionCard(
                     title: "Anggota Keluarga",
-                    headerAction: IntrinsicWidth(
-                      child: SizedBox(
-                        height: 32,
-                        child: ElevatedButton(
-                          onPressed: () => _openFamilyModal(),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _redAccent,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                          ),
-                          child: const Text("+ Tambah", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                        ),
+                    subtitle: "Data tanggungan keluarga jemaat",
+                    headerAction: ElevatedButton.icon(
+                      onPressed: () => _openFamilyModal(),
+                      icon: const Icon(Icons.add_rounded, size: 16),
+                      label: const Text("Tambah"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: gold.withOpacity(0.1),
+                        foregroundColor: gold,
+                        elevation: 0,
+                        minimumSize: const Size(0, 0),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        textStyle: GoogleFonts.montserrat(fontSize: 12, fontWeight: FontWeight.w800),
                       ),
                     ),
                     child: Column(
                       children: [
                         if (userProvider.familyMembers.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 20),
-                            child: Text("Belum ada data keluarga", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)),
-                          )
+                          _buildEmptyState("Belum ada data keluarga")
                         else
                           ...userProvider.familyMembers.map((m) => _buildFamilyItem(m)),
                       ],
                     ),
                   ),
 
-                  _buildSectionBox(
+                  const SizedBox(height: 32),
+                  _buildSectionCard(
                     title: "Keamanan Akun",
+                    subtitle: "Perbarui password secara berkala",
                     child: Form(
                       key: _passwordFormKey,
                       child: Column(
                         children: [
-                          _buildInput("Password Lama", oldPassController, isPassword: true),
-                          _buildInput("Password Baru", newPassController, isPassword: true),
-                          _buildInput("Konfirmasi Password Baru", confirmPassController, isPassword: true),
-                          const SizedBox(height: 16),
+                          _buildInput("Password Lama", oldPassController, Icons.lock_open_rounded, isPassword: true),
+                          _buildInput("Password Baru", newPassController, Icons.lock_outline_rounded, isPassword: true),
+                          _buildInput("Konfirmasi Password", confirmPassController, Icons.lock_rounded, isPassword: true),
+                          const SizedBox(height: 24),
                           SizedBox(
                             width: double.infinity,
-                            height: 50,
                             child: ElevatedButton(
                               onPressed: userProvider.isLoading ? null : _handlePasswordSubmit,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: _navy,
+                                backgroundColor: navy,
                                 foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                                elevation: 0,
                               ),
-                              child: const Text("Perbarui Password", style: TextStyle(fontWeight: FontWeight.bold)),
+                              child: Text("Perbarui Password", style: GoogleFonts.montserrat(fontWeight: FontWeight.w800, letterSpacing: 0.5)),
                             ),
                           ),
                         ],
@@ -311,48 +367,127 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
     );
   }
 
-  Widget _buildSectionBox({required String title, required Widget child, Widget? headerAction}) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(top: 32),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(color: _sectionGray, borderRadius: BorderRadius.circular(12)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(child: Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
-              if (headerAction != null) headerAction,
-            ],
+  Widget _buildHeader() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: gold.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
           ),
-          const SizedBox(height: 20),
-          child,
-        ],
-      ),
+          child: Text(
+            'DATA JEMAAT',
+            style: GoogleFonts.montserrat(
+              color: gold,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.5,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Profil &\nKeanggotaan',
+          style: GoogleFonts.montserrat(
+            color: navy,
+            fontSize: 28,
+            fontWeight: FontWeight.w900,
+            height: 1.1,
+            letterSpacing: -1,
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildInput(String label, TextEditingController controller, {bool readOnly = false, bool isPassword = false}) {
+  Widget _buildSectionCard({required String title, required String subtitle, required Widget child, Widget? headerAction}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.montserrat(color: textDark, fontSize: 18, fontWeight: FontWeight.w800),
+                  ),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.montserrat(color: textGrey, fontSize: 13, fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ),
+            ),
+            if (headerAction != null) ...[
+              const SizedBox(width: 8),
+              headerAction,
+            ],
+          ],
+        ),
+        const SizedBox(height: 16),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 15,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: child,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInput(String label, TextEditingController controller, IconData icon, {bool readOnly = false, bool isPassword = false}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold, color: _navy, fontSize: 13)),
+          Text(
+            label,
+            style: GoogleFonts.montserrat(fontWeight: FontWeight.w700, color: textDark, fontSize: 13),
+          ),
           const SizedBox(height: 8),
           TextFormField(
             controller: controller,
             readOnly: readOnly,
             obscureText: isPassword,
-            style: const TextStyle(fontSize: 14),
+            style: GoogleFonts.montserrat(fontSize: 15, color: textDark, fontWeight: FontWeight.w600),
             decoration: InputDecoration(
               filled: true,
-              fillColor: readOnly ? Colors.grey[200] : Colors.white,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey[300]!)),
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey[300]!)),
+              fillColor: readOnly ? softBg : Colors.white,
+              prefixIcon: Icon(icon, color: textGrey, size: 20),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide(color: Colors.grey.withOpacity(0.2)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide(color: Colors.grey.withOpacity(0.2)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: const BorderSide(color: navy, width: 1.5),
+              ),
             ),
           ),
         ],
@@ -364,21 +499,64 @@ class _MemberProfileScreenState extends State<MemberProfileScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(
+        color: softBg,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.grey.withOpacity(0.1)),
+      ),
       child: Row(
         children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: navy.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.family_restroom_rounded, color: navy, size: 20),
+          ),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(member.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: _navy)),
-                Text("${member.relationship} • ${member.gender ?? '-'}", style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                Text(
+                  member.name,
+                  style: GoogleFonts.montserrat(fontWeight: FontWeight.w800, fontSize: 15, color: textDark),
+                ),
+                Text(
+                  "${member.relationship} • ${member.gender ?? '-'}",
+                  style: GoogleFonts.montserrat(fontSize: 12, color: textGrey, fontWeight: FontWeight.w500),
+                ),
               ],
             ),
           ),
-          IconButton(icon: const Icon(Icons.edit_note, color: _navy), onPressed: () => _openFamilyModal(member)),
-          IconButton(icon: const Icon(Icons.delete_outline, color: _redAccent), onPressed: () => _handleDeleteFamily(member.id!)),
+          IconButton(
+            icon: const Icon(Icons.edit_note_rounded, color: navy, size: 22),
+            onPressed: () => _openFamilyModal(member),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline_rounded, color: redAccent, size: 22),
+            onPressed: () => _handleDeleteFamily(member.id!),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(String message) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(Icons.people_outline_rounded, color: textGrey.withOpacity(0.3), size: 40),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              style: GoogleFonts.montserrat(color: textGrey, fontSize: 14, fontWeight: FontWeight.w500, fontStyle: FontStyle.italic),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -400,6 +578,10 @@ class _FamilyMemberModalState extends State<_FamilyMemberModal> {
   String? gender;
   bool _isSaving = false;
 
+  static const Color navy = Color(0xFF05066F);
+  static const Color textDark = Color(0xFF1A1A2E);
+  static const Color textGrey = Color(0xFF7A7C92);
+
   @override
   void initState() {
     super.initState();
@@ -413,47 +595,78 @@ class _FamilyMemberModalState extends State<_FamilyMemberModal> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return Container(
+      margin: const EdgeInsets.all(16),
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: Container(
-        padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(28),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("Data Anggota Keluarga", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: _navy)),
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
             const SizedBox(height: 24),
-            _buildField("Nama Lengkap", nameController),
-            _buildField("Hubungan", relController, hint: "Contoh: Anak / Istri"),
-            const Text("Jenis Kelamin", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: _navy)),
+            Text(
+              "Data Keluarga",
+              style: GoogleFonts.montserrat(fontSize: 22, fontWeight: FontWeight.w900, color: navy),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Lengkapi detail informasi anggota keluarga",
+              style: GoogleFonts.montserrat(fontSize: 14, color: textGrey, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 32),
+            _buildField("Nama Lengkap", nameController, Icons.person_outline_rounded),
+            _buildField("Hubungan", relController, Icons.family_restroom_rounded, hint: "Contoh: Anak / Istri"),
+
+            Text(
+              "Jenis Kelamin",
+              style: GoogleFonts.montserrat(fontWeight: FontWeight.w700, fontSize: 13, color: textDark),
+            ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               value: gender,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              isExpanded: true,
+              style: GoogleFonts.montserrat(color: textDark, fontWeight: FontWeight.w600, fontSize: 15),
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.wc_rounded, color: textGrey, size: 20),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide(color: Colors.grey.withOpacity(0.2))),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide(color: Colors.grey.withOpacity(0.2))),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 fillColor: Colors.white,
                 filled: true,
               ),
               items: ["Laki-laki", "Perempuan"].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
               onChanged: _isSaving ? null : (v) => setState(() => gender = v),
             ),
-            const SizedBox(height: 16),
-            _buildField("Tanggal Lahir", dateController, hint: "YYYY-MM-DD"),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
+            _buildField("Tanggal Lahir", dateController, Icons.calendar_today_rounded, hint: "YYYY-MM-DD"),
+            const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
-              height: 50,
               child: ElevatedButton(
                 onPressed: _isSaving ? null : () async {
                   if (nameController.text.isEmpty || relController.text.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Nama dan Hubungan wajib diisi")));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text("Nama dan Hubungan wajib diisi", style: GoogleFonts.montserrat(fontWeight: FontWeight.w600)),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
                     return;
                   }
 
                   setState(() => _isSaving = true);
-
-                  // Menutup keyboard sebelum proses selesai
                   FocusScope.of(context).unfocus();
 
                   await widget.onSave({
@@ -468,13 +681,15 @@ class _FamilyMemberModalState extends State<_FamilyMemberModal> {
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _navy,
+                  backgroundColor: navy,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  elevation: 0,
                 ),
                 child: _isSaving
                   ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text("Simpan Data", style: TextStyle(fontWeight: FontWeight.bold)),
+                  : Text("Simpan Data", style: GoogleFonts.montserrat(fontWeight: FontWeight.w800, letterSpacing: 0.5)),
               ),
             ),
           ],
@@ -483,22 +698,28 @@ class _FamilyMemberModalState extends State<_FamilyMemberModal> {
     );
   }
 
-  Widget _buildField(String label, TextEditingController controller, {String? hint}) {
+  Widget _buildField(String label, TextEditingController controller, IconData icon, {String? hint}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: _navy)),
+          Text(
+            label,
+            style: GoogleFonts.montserrat(fontWeight: FontWeight.w700, fontSize: 13, color: textDark),
+          ),
           const SizedBox(height: 8),
           TextField(
             controller: controller,
             enabled: !_isSaving,
-            style: const TextStyle(fontSize: 14),
+            style: GoogleFonts.montserrat(fontSize: 15, color: textDark, fontWeight: FontWeight.w600),
             decoration: InputDecoration(
               hintText: hint,
-              border: const OutlineInputBorder(),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              hintStyle: GoogleFonts.montserrat(color: textGrey, fontSize: 14),
+              prefixIcon: Icon(icon, color: textGrey, size: 20),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide(color: Colors.grey.withOpacity(0.2))),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide(color: Colors.grey.withOpacity(0.2))),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             ),
           ),
         ],
