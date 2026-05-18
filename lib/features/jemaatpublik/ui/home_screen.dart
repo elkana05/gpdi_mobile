@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'public_drawer.dart';
-import 'jadwal_ibadah_screen.dart';
-import 'profil_gereja_screen.dart';
-import 'pelayanan_gereja_screen.dart';
-import 'galeri_screen.dart';
-import 'pengumuman_screen.dart';
 import 'app_bottom_navigation.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -77,12 +73,8 @@ class HomeScreen extends StatelessWidget {
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            onPressed: () {}, // Future feature: Notifications
-            icon: const Icon(Icons.notifications_none_rounded, color: textGrey),
-          ),
-          const SizedBox(width: 8),
+        actions: const [
+          SizedBox(width: 16),
         ],
       ),
       body: SingleChildScrollView(
@@ -271,7 +263,7 @@ class _ScheduleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const JadwalIbadahScreen())),
+      onTap: () => context.push('/jadwal-ibadah'),
       borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.all(20),
@@ -354,28 +346,28 @@ class _MenuGrid extends StatelessWidget {
           title: 'Profil Gereja',
           subtitle: 'Tentang kami',
           iconColor: HomeScreen.gold,
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilGerejaScreen())),
+          onTap: () => context.push('/profil-gereja'),
         ),
         _MenuBox(
           icon: Icons.volunteer_activism_rounded,
           title: 'Pelayanan',
           subtitle: 'Bidang pelayanan',
           iconColor: HomeScreen.navy,
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PelayananGerejaScreen())),
+          onTap: () => context.push('/pelayanan'),
         ),
         _MenuBox(
           icon: Icons.photo_library_rounded,
           title: 'Galeri',
           subtitle: 'Dokumentasi',
           iconColor: const Color(0xFF455A64),
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GaleriScreen())),
+          onTap: () => context.push('/galeri'),
         ),
         _MenuBox(
           icon: Icons.campaign_rounded,
           title: 'Pengumuman',
           subtitle: 'Info terbaru',
           iconColor: const Color(0xFFE53935),
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PengumumanScreen())),
+          onTap: () => context.push('/pengumuman-publik'),
         ),
       ],
     );
@@ -493,12 +485,12 @@ class _ContactCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          _contactItem(Icons.location_on_rounded, 'Jl. Raya Sibulele No. 123'),
-          _contactItem(Icons.phone_rounded, '(021) 123-4567'),
-          _contactItem(Icons.mail_rounded, 'sekretariat@gpdisibulele.org'),
+          _contactItem(context, Icons.location_on_rounded, 'Jl. Raya Sibulele No. 123'),
+          _contactItem(context, Icons.phone_rounded, '(021) 123-4567'),
+          _contactItem(context, Icons.mail_rounded, 'sekretariat@gpdisibulele.org'),
           const SizedBox(height: 8),
           TextButton(
-            onPressed: () {},
+            onPressed: () => context.push('/kontak'),
             style: TextButton.styleFrom(
               backgroundColor: Colors.white.withOpacity(0.15),
               foregroundColor: Colors.white,
@@ -519,31 +511,34 @@ class _ContactCard extends StatelessWidget {
     );
   }
 
-  Widget _contactItem(IconData icon, String text) {
+  Widget _contactItem(BuildContext context, IconData icon, String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: () => context.push('/kontak'),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, size: 18, color: const Color(0xFFFFD34E)),
             ),
-            child: Icon(icon, size: 18, color: const Color(0xFFFFD34E)),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.white,
-                fontWeight: FontWeight.w500
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                text,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

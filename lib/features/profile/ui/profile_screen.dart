@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../jemaatpublik/ui/public_drawer.dart';
 import '../../jemaatpublik/ui/app_bottom_navigation.dart';
-import '../../auth/ui/login_screen.dart';
-import '../../jemaataktif/ui/member_profile_screen.dart';
-import '../../../pendeta/ui/pastor_main_screen.dart'; // Import Pastor Main Screen if exists
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
-  // Mobile consistency colors
   static const Color navy = Color(0xFF05066F);
   static const Color gold = Color(0xFFC5A327);
   static const Color softBg = Color(0xFFF8F9FE);
@@ -22,19 +19,17 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, auth, _) {
-        // Redirection logic based on Auth Status and Role
         if (auth.status == AuthStatus.authenticated && auth.user != null) {
-          final roles = auth.user!.roles;
+          final roles = auth.user!.roles.map((e) => e.toLowerCase()).toList();
 
-          // Redirect Pastor/Pendeta
-          if (roles.contains('pendeta')) {
-            // Note: If you have a specific Pastor Profile screen, use it here.
-            // For now, redirecting to Pastor Main Screen to avoid congregate layout errors.
-            return const PastorMainScreen();
+          if (roles.contains('pendeta') || roles.contains('admin')) {
+             // Use microtask to avoid building while navigating
+             Future.microtask(() => context.go('/pastor-home'));
+             return const Scaffold(body: Center(child: CircularProgressIndicator()));
           }
 
-          // Default authenticated redirect (Congregation/Jemaat)
-          return const MemberProfileScreen();
+          Future.microtask(() => context.go('/member-profile'));
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
 
         return Scaffold(
@@ -276,14 +271,7 @@ class _GuestProfileCard extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const LoginScreen(),
-                  ),
-                );
-              },
+              onPressed: () => context.push('/login'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: ProfileScreen.navy,
                 foregroundColor: Colors.white,

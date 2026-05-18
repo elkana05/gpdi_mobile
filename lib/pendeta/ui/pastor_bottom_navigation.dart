@@ -18,23 +18,23 @@ class PastorBottomNavigation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 95,
+      height: 90,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(35),
+          top: Radius.circular(30),
         ),
         boxShadow: [
           BoxShadow(
-            color: navy.withOpacity(0.12),
-            blurRadius: 40,
-            offset: const Offset(0, -10),
+            color: navy.withOpacity(0.08),
+            blurRadius: 30,
+            offset: const Offset(0, -5),
           ),
         ],
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -61,6 +61,12 @@ class PastorBottomNavigation extends StatelessWidget {
                 label: 'Agenda',
                 isActive: currentIndex == 3,
                 onTap: () => onTap(3),
+              ),
+              _BottomNavItem(
+                icon: currentIndex == 4 ? Icons.person_rounded : Icons.person_outline_rounded,
+                label: 'Profil',
+                isActive: currentIndex == 4,
+                onTap: () => onTap(4),
               ),
             ],
           ),
@@ -89,34 +95,27 @@ class _BottomNavItem extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        width: 75,
+        width: 65,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
+              duration: const Duration(milliseconds: 250),
               curve: Curves.easeInOut,
-              margin: const EdgeInsets.only(bottom: 6),
+              margin: const EdgeInsets.only(bottom: 4),
               padding: EdgeInsets.symmetric(
-                horizontal: isActive ? 18 : 10,
-                vertical: isActive ? 8 : 6,
+                horizontal: isActive ? 14 : 10,
+                vertical: isActive ? 6 : 4,
               ),
               decoration: BoxDecoration(
                 color: isActive ? PastorBottomNavigation.navy : Colors.transparent,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: isActive ? [
-                  BoxShadow(
-                    color: PastorBottomNavigation.navy.withOpacity(0.2),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  )
-                ] : [], // Use empty list instead of null to prevent lerp issues
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(
                 icon,
                 color: isActive ? Colors.white : PastorBottomNavigation.inactiveColor,
-                size: 22,
+                size: 20,
               ),
             ),
             Text(
@@ -124,23 +123,10 @@ class _BottomNavItem extends StatelessWidget {
               maxLines: 1,
               style: GoogleFonts.montserrat(
                 color: isActive ? PastorBottomNavigation.navy : PastorBottomNavigation.inactiveColor,
-                fontSize: 10,
+                fontSize: 9,
                 fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
-                letterSpacing: 0.2,
               ),
             ),
-            if (isActive)
-              Container(
-                margin: const EdgeInsets.only(top: 4),
-                width: 4,
-                height: 4,
-                decoration: const BoxDecoration(
-                  color: PastorBottomNavigation.gold,
-                  shape: BoxShape.circle,
-                ),
-              )
-            else
-              const SizedBox(height: 8),
           ],
         ),
       ),

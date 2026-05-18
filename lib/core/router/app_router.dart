@@ -1,4 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../../features/auth/providers/auth_provider.dart';
 import '../../features/auth/ui/login_screen.dart';
 import '../../features/auth/ui/forgot_password_screen.dart';
 import '../../features/jemaatpublik/ui/home_screen.dart';
@@ -19,6 +22,34 @@ import '../../pendeta/ui/pastor_main_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/home',
+  redirect: (context, state) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final status = authProvider.status;
+    final user = authProvider.user;
+
+    // Daftar rute yang hanya boleh diakses jika sudah login
+    final bool loggingIn = state.matchedLocation == '/login';
+    final bool isAuthRoute = state.matchedLocation.startsWith('/pastor-') ||
+                             state.matchedLocation.startsWith('/member-');
+
+    // Jika sedang di initial (sedang cek token), jangan redirect dulu
+    if (status == AuthStatus.initial) return null;
+
+    // Jika belum login dan mencoba akses rute terproteksi, lempar ke home publik (bukan login, agar user bisa lihat konten publik dulu)
+    if (status != AuthStatus.authenticated && isAuthRoute) {
+      return '/home';
+    }
+
+    // Jika sudah login dan mencoba ke halaman login, redirect ke dashboard yang sesuai
+    if (status == AuthStatus.authenticated && loggingIn) {
+      if (user?.roles?.contains('pastor') ?? false) {
+        return '/pastor-home';
+      }
+      return '/member-home';
+    }
+
+    return null;
+  },
   routes: [
     // ==========================================
     // RUTE JEMAAT PUBLIK (GUEST)

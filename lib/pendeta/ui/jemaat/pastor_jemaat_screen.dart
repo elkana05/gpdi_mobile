@@ -16,6 +16,7 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
   static const Color navy = Color(0xFF05066F);
   static const Color gold = Color(0xFFC5A327);
   static const Color softBg = Color(0xFFF8F9FE);
+  static const Color textGrey = Color(0xFF7A7C92);
 
   String _searchQuery = '';
   String? _selectedRayonFilter;
@@ -39,7 +40,7 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
     final nameController = TextEditingController(text: user?.fullName ?? '');
     final emailController = TextEditingController(text: user?.email ?? '');
     final passwordController = TextEditingController();
-    String selectedRole = user?.roles.first ?? 'jemaat';
+    String selectedRole = user?.roles.isNotEmpty == true ? user!.roles.first : 'jemaat';
     String? selectedRayonId = user?.rayonId?.toString();
 
     showModalBottomSheet(
@@ -57,31 +58,36 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(10)))),
+                  const SizedBox(height: 20),
                   Text(user == null ? 'Tambah Akun Jemaat' : 'Edit Data Jemaat',
                     style: GoogleFonts.montserrat(fontSize: 18, fontWeight: FontWeight.bold, color: navy)),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
 
                   _buildLabel('Nama Lengkap'),
                   TextFormField(
                     controller: nameController,
-                    decoration: _inputDecoration('Masukkan nama'),
+                    style: GoogleFonts.montserrat(fontSize: 14),
+                    decoration: _inputDecoration('Contoh: Budi Santoso', Icons.person_outline),
                     validator: (v) => v!.isEmpty ? 'Nama wajib diisi' : null,
                   ),
                   const SizedBox(height: 16),
 
-                  _buildLabel('Email'),
+                  _buildLabel('Email Akun'),
                   TextFormField(
                     controller: emailController,
-                    decoration: _inputDecoration('jemaat@gpdi.com'),
+                    style: GoogleFonts.montserrat(fontSize: 14),
+                    decoration: _inputDecoration('jemaat@email.com', Icons.alternate_email),
                     keyboardType: TextInputType.emailAddress,
                     validator: (v) => v!.isEmpty ? 'Email wajib diisi' : null,
                   ),
                   const SizedBox(height: 16),
 
-                  _buildLabel('Password ${user != null ? "(Kosongkan jika tidak diubah)" : ""}'),
+                  _buildLabel('Password ${user != null ? "(Kosongkan jika tidak ganti)" : ""}'),
                   TextFormField(
                     controller: passwordController,
-                    decoration: _inputDecoration('Minimal 6 karakter'),
+                    style: GoogleFonts.montserrat(fontSize: 14),
+                    decoration: _inputDecoration('Minimal 6 karakter', Icons.lock_outline),
                     obscureText: true,
                     validator: (v) => (user == null && v!.isEmpty) ? 'Password wajib diisi' : null,
                   ),
@@ -93,14 +99,15 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildLabel('Peran Akses'),
+                            _buildLabel('Akses'),
                             DropdownButtonFormField<String>(
                               value: selectedRole,
-                              decoration: _inputDecoration(''),
+                              style: GoogleFonts.montserrat(fontSize: 14, color: Colors.black),
+                              decoration: _inputDecoration('', null),
                               items: const [
                                 DropdownMenuItem(value: 'jemaat', child: Text('Jemaat')),
-                                DropdownMenuItem(value: 'ketua_rayon', child: Text('Ketua Rayon')),
-                                DropdownMenuItem(value: 'pendeta', child: Text('Pendeta')),
+                                DropdownMenuItem(value: 'ketua_rayon', child: Text('Ketua')),
+                                DropdownMenuItem(value: 'pendeta', child: Text('Pastor')),
                               ],
                               onChanged: (v) => setModalState(() {
                                 selectedRole = v!;
@@ -119,13 +126,14 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
                             DropdownButtonFormField<String>(
                               value: selectedRayonId,
                               disabledHint: const Text('-'),
-                              decoration: _inputDecoration(''),
+                              style: GoogleFonts.montserrat(fontSize: 14, color: Colors.black),
+                              decoration: _inputDecoration('', null),
                               items: provider.rayons.map((r) => DropdownMenuItem(
                                 value: r.id.toString(),
                                 child: Text(r.name, overflow: TextOverflow.ellipsis),
                               )).toList(),
                               onChanged: selectedRole == 'pendeta' ? null : (v) => setModalState(() => selectedRayonId = v),
-                              validator: (v) => (selectedRole != 'pendeta' && v == null) ? 'Pilih Rayon' : null,
+                              validator: (v) => (selectedRole != 'pendeta' && v == null) ? 'Pilih' : null,
                             ),
                           ],
                         ),
@@ -136,9 +144,13 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
 
                   SizedBox(
                     width: double.infinity,
-                    height: 50,
+                    height: 55,
                     child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: navy, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: navy,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))
+                      ),
                       onPressed: provider.isLoading ? null : () async {
                         if (_formKey.currentState!.validate()) {
                           final payload = {
@@ -160,16 +172,16 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
 
                           if (success && mounted) {
                             Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Berhasil menyimpan data')));
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Data berhasil disimpan'), backgroundColor: Colors.green));
                           }
                         }
                       },
                       child: provider.isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
-                        : Text('SIMPAN AKUN', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, color: Colors.white)),
+                        : Text('SIMPAN PERUBAHAN', style: GoogleFonts.montserrat(fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 1)),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -180,16 +192,19 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
   }
 
   Widget _buildLabel(String text) => Padding(
-    padding: const EdgeInsets.only(bottom: 6),
-    child: Text(text, style: GoogleFonts.montserrat(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey[700])),
+    padding: const EdgeInsets.only(bottom: 8, left: 4),
+    child: Text(text, style: GoogleFonts.montserrat(fontSize: 11, fontWeight: FontWeight.w800, color: textGrey)),
   );
 
-  InputDecoration _inputDecoration(String hint) => InputDecoration(
+  InputDecoration _inputDecoration(String hint, IconData? icon) => InputDecoration(
     hintText: hint,
+    hintStyle: GoogleFonts.montserrat(fontSize: 13, color: textGrey.withOpacity(0.5)),
+    prefixIcon: icon != null ? Icon(icon, color: navy, size: 20) : null,
     filled: true,
     fillColor: softBg,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: const BorderSide(color: navy, width: 1)),
   );
 
   @override
@@ -199,12 +214,18 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: Text('Manajemen Jemaat', style: GoogleFonts.montserrat(color: navy, fontWeight: FontWeight.w800, fontSize: 18)),
+        scrolledUnderElevation: 0,
+        title: Text('Data Jemaat', style: GoogleFonts.montserrat(color: navy, fontWeight: FontWeight.w800, fontSize: 18)),
         actions: [
           IconButton(
             onPressed: () => _showUserForm(),
-            icon: const Icon(Icons.person_add_alt_1, color: navy),
-          )
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: navy.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+              child: const Icon(Icons.person_add_rounded, color: navy, size: 20),
+            ),
+          ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Consumer<UserProvider>(
@@ -218,7 +239,7 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
 
           return Column(
             children: [
-              _buildFilters(provider),
+              _buildFilterSection(provider),
               Expanded(
                 child: provider.isLoading && users.isEmpty
                   ? const Center(child: CircularProgressIndicator(color: navy))
@@ -228,7 +249,7 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
                       child: users.isEmpty
                         ? _buildEmptyState()
                         : ListView.builder(
-                            padding: const EdgeInsets.all(20),
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                             itemCount: users.length,
                             itemBuilder: (context, index) => _buildUserCard(users[index]),
                           ),
@@ -241,53 +262,75 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
     );
   }
 
-  Widget _buildFilters(UserProvider provider) {
+  Widget _buildFilterSection(UserProvider provider) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
       color: Colors.white,
       child: Column(
         children: [
           TextField(
             onChanged: (v) => setState(() => _searchQuery = v),
+            style: GoogleFonts.montserrat(fontSize: 14),
             decoration: InputDecoration(
               hintText: 'Cari nama atau email...',
-              prefixIcon: const Icon(Icons.search, color: navy),
+              prefixIcon: const Icon(Icons.search_rounded, color: textGrey),
               filled: true,
               fillColor: softBg,
+              contentPadding: const EdgeInsets.symmetric(vertical: 0),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
             ),
           ),
           const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            value: _selectedRayonFilter,
-            isExpanded: true,
-            decoration: InputDecoration(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-              filled: true,
-              fillColor: softBg,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          SizedBox(
+            height: 40,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                _buildFilterChip(null, 'Semua'),
+                ...provider.rayons.map((r) => _buildFilterChip(r.id.toString(), r.name)),
+              ],
             ),
-            hint: const Text('Filter Rayon'),
-            items: [
-              const DropdownMenuItem(value: null, child: Text('Semua Rayon')),
-              ...provider.rayons.map((r) => DropdownMenuItem(
-                value: r.id.toString(),
-                child: Text(r.name),
-              )),
-            ],
-            onChanged: (v) => setState(() => _selectedRayonFilter = v),
           ),
         ],
       ),
     );
   }
 
+  Widget _buildFilterChip(String? value, String label) {
+    bool isSelected = _selectedRayonFilter == value;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedRayonFilter = value),
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isSelected ? navy : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: isSelected ? navy : Colors.grey.shade300),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.montserrat(
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+            color: isSelected ? Colors.white : textGrey,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildUserCard(UserModel user) {
     final provider = Provider.of<UserProvider>(context, listen: false);
-    String roleName = user.roles.isEmpty ? 'Jemaat' : user.roles.first.replaceAll('_', ' ').toUpperCase();
+    String roleName = user.roles.isEmpty ? 'JEMAAT' : user.roles.first.replaceAll('_', ' ').toUpperCase();
+
+    Color roleColor = navy;
+    if (roleName.contains('PASTOR')) roleColor = Colors.purple;
+    if (roleName.contains('KETUA')) roleColor = gold;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -297,27 +340,28 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: navy.withOpacity(0.1),
-            child: const Icon(Icons.person, color: navy),
+            radius: 22,
+            backgroundColor: roleColor.withOpacity(0.1),
+            child: Icon(Icons.person_rounded, color: roleColor, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(user.fullName, style: GoogleFonts.montserrat(fontWeight: FontWeight.w700, fontSize: 15)),
-                Text(user.email, style: GoogleFonts.montserrat(fontSize: 12, color: Colors.grey)),
-                const SizedBox(height: 4),
+                Text(user.fullName, style: GoogleFonts.montserrat(fontWeight: FontWeight.w800, fontSize: 14, color: navy)),
+                Text(user.email, style: GoogleFonts.montserrat(fontSize: 11, color: textGrey, fontWeight: FontWeight.w500)),
+                const SizedBox(height: 6),
                 Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(color: gold.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
-                      child: Text(roleName, style: GoogleFonts.montserrat(fontSize: 10, color: gold, fontWeight: FontWeight.bold)),
+                      decoration: BoxDecoration(color: roleColor.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+                      child: Text(roleName, style: GoogleFonts.montserrat(fontSize: 9, color: roleColor, fontWeight: FontWeight.w900)),
                     ),
                     if (user.rayonId != null) ...[
                       const SizedBox(width: 8),
-                      Text('Rayon ${user.rayonId}', style: GoogleFonts.montserrat(fontSize: 10, color: Colors.grey[600])),
+                      Text('Rayon ${user.rayonId}', style: GoogleFonts.montserrat(fontSize: 10, color: textGrey, fontWeight: FontWeight.w600)),
                     ]
                   ],
                 ),
@@ -325,6 +369,8 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
             ),
           ),
           PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert_rounded, color: textGrey),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
             onSelected: (val) async {
               if (val == 'edit') {
                 _showUserForm(user);
@@ -334,8 +380,8 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit, size: 18), SizedBox(width: 8), Text('Edit')])),
-              const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete, size: 18, color: Colors.red), SizedBox(width: 8), Text('Hapus', style: TextStyle(color: Colors.red))])),
+              PopupMenuItem(value: 'edit', child: Row(children: [const Icon(Icons.edit_rounded, size: 18, color: Colors.orange), const SizedBox(width: 12), Text('Edit', style: GoogleFonts.montserrat(fontSize: 13))])),
+              PopupMenuItem(value: 'delete', child: Row(children: [const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red), const SizedBox(width: 12), Text('Hapus', style: GoogleFonts.montserrat(fontSize: 13, color: Colors.red))])),
             ],
           ),
         ],
@@ -347,11 +393,12 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
     return await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Hapus Jemaat?'),
-        content: Text('Apakah Anda yakin ingin menghapus data $name?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Hapus Jemaat?', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, color: navy)),
+        content: Text('Apakah Anda yakin ingin menghapus data $name?', style: GoogleFonts.montserrat(fontSize: 14)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Hapus', style: TextStyle(color: Colors.red))),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text('Batal', style: GoogleFonts.montserrat(color: textGrey, fontWeight: FontWeight.bold))),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: Text('Hapus', style: GoogleFonts.montserrat(color: Colors.red, fontWeight: FontWeight.bold))),
         ],
       ),
     ) ?? false;
@@ -362,9 +409,9 @@ class _PastorJemaatScreenState extends State<PastorJemaatScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.people_outline, size: 64, color: Colors.grey.withOpacity(0.5)),
+          Icon(Icons.people_outline_rounded, size: 64, color: Colors.grey.withOpacity(0.2)),
           const SizedBox(height: 16),
-          Text('Tidak ada data jemaat', style: GoogleFonts.montserrat(color: Colors.grey)),
+          Text('Tidak ada data jemaat', style: GoogleFonts.montserrat(color: textGrey, fontWeight: FontWeight.w500)),
         ],
       ),
     );

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../features/auth/services/user_service.dart';
 import '../../../features/jemaataktif/services/event_service.dart';
 
 class PastorDashboardScreen extends StatefulWidget {
-  const PastorDashboardScreen({super.key});
+  final Function(int)? onTabSelected;
+  const PastorDashboardScreen({super.key, this.onTabSelected});
 
   @override
   State<PastorDashboardScreen> createState() => _PastorDashboardScreenState();
@@ -22,7 +22,6 @@ class _PastorDashboardScreenState extends State<PastorDashboardScreen> {
   int _jadwalCount = 0;
   int _kegiatanCount = 0;
 
-  // Mobile consistency colors
   static const Color navy = Color(0xFF05066F);
   static const Color gold = Color(0xFFC5A327);
   static const Color softBg = Color(0xFFF8F9FE);
@@ -70,28 +69,21 @@ class _PastorDashboardScreenState extends State<PastorDashboardScreen> {
         elevation: 0,
         scrolledUnderElevation: 0,
         title: Text(
-          'DASHBOARD UTAMA',
+          'DASHBOARD',
           style: GoogleFonts.montserrat(
             color: navy,
             fontWeight: FontWeight.w900,
             fontSize: 16,
-            letterSpacing: 1.5,
+            letterSpacing: 2.0,
           ),
         ),
         centerTitle: true,
         actions: [
           IconButton(
-            onPressed: () => _handleLogout(context),
-            icon: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.05),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 20),
-            ),
+            onPressed: _loadInitialData,
+            icon: const Icon(Icons.refresh_rounded, color: navy, size: 22),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
         ],
       ),
       body: RefreshIndicator(
@@ -105,14 +97,11 @@ class _PastorDashboardScreenState extends State<PastorDashboardScreen> {
             children: [
               _buildHeader(user?.fullName ?? 'Hamba Tuhan'),
               const SizedBox(height: 32),
-
               _buildStatsGrid(),
-
               const SizedBox(height: 32),
               _buildSectionHeader('Pusat Kendali', 'Kelola seluruh operasional gereja'),
               const SizedBox(height: 16),
               _buildInfoBox(),
-
               const SizedBox(height: 32),
               _buildSectionHeader('Akses Cepat', 'Menu manajemen data'),
               const SizedBox(height: 16),
@@ -149,12 +138,12 @@ class _PastorDashboardScreenState extends State<PastorDashboardScreen> {
             color: navy,
             fontSize: 28,
             fontWeight: FontWeight.w900,
-            letterSpacing: -0.5,
+            letterSpacing: -1.0,
           ),
         ),
         const SizedBox(height: 8),
         Text(
-          'Berikut adalah ringkasan sistem hari ini.',
+          'Ringkasan sistem hari ini.',
           style: GoogleFonts.montserrat(
             color: textGrey,
             fontSize: 14,
@@ -197,21 +186,24 @@ class _PastorDashboardScreenState extends State<PastorDashboardScreen> {
           label: 'Total Akun Jemaat',
           value: _userCount.toString(),
           icon: Icons.people_rounded,
-          color: Colors.blue,
+          color: const Color(0xFF4361EE),
+          onTap: () => widget.onTabSelected?.call(1),
         ),
         const SizedBox(height: 16),
         _buildStatsCard(
           label: 'Jadwal Ibadah',
           value: _jadwalCount.toString(),
-          icon: Icons.event_available_rounded,
-          color: Colors.amber,
+          icon: Icons.church_rounded,
+          color: const Color(0xFFF72585),
+          onTap: () => widget.onTabSelected?.call(3),
         ),
         const SizedBox(height: 16),
         _buildStatsCard(
           label: 'Total Kegiatan',
           value: _kegiatanCount.toString(),
-          icon: Icons.assignment_rounded,
-          color: Colors.purple,
+          icon: Icons.event_available_rounded,
+          color: const Color(0xFF4CC9F0),
+          onTap: () => widget.onTabSelected?.call(3),
         ),
       ],
     );
@@ -222,59 +214,63 @@ class _PastorDashboardScreenState extends State<PastorDashboardScreen> {
     required String value,
     required IconData icon,
     required Color color,
+    VoidCallback? onTap,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(15),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
             ),
-            child: Icon(icon, color: color, size: 28),
-          ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: GoogleFonts.montserrat(
-                    color: textGrey,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: GoogleFonts.montserrat(
+                      color: textGrey,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                _isLoading
-                    ? const SizedBox(width: 40, height: 2, child: LinearProgressIndicator())
-                    : Text(
-                        value,
-                        style: GoogleFonts.montserrat(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                          color: textDark,
+                  const SizedBox(height: 2),
+                  _isLoading
+                      ? const SizedBox(width: 30, height: 2, child: LinearProgressIndicator())
+                      : Text(
+                          value,
+                          style: GoogleFonts.montserrat(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            color: textDark,
+                          ),
                         ),
-                      ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Icon(Icons.trending_up_rounded, color: Colors.green.withOpacity(0.3), size: 20),
-        ],
+            Icon(Icons.chevron_right_rounded, color: textGrey.withOpacity(0.3), size: 20),
+          ],
+        ),
       ),
     );
   }
@@ -288,11 +284,11 @@ class _PastorDashboardScreenState extends State<PastorDashboardScreen> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [navy, Color(0xFF1A1B8C)],
+          colors: [navy, Color(0xFF1E208C)],
         ),
         boxShadow: [
           BoxShadow(
-            color: navy.withOpacity(0.3),
+            color: navy.withOpacity(0.2),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -301,11 +297,11 @@ class _PastorDashboardScreenState extends State<PastorDashboardScreen> {
       child: Stack(
         children: [
           Positioned(
-            right: -20,
-            top: -20,
+            right: -10,
+            top: -10,
             child: Icon(
               Icons.admin_panel_settings_rounded,
-              size: 120,
+              size: 100,
               color: Colors.white.withOpacity(0.05),
             ),
           ),
@@ -313,16 +309,16 @@ class _PastorDashboardScreenState extends State<PastorDashboardScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withOpacity(0.15),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.info_outline_rounded, color: Colors.white, size: 24),
+                child: const Icon(Icons.shield_rounded, color: Colors.white, size: 20),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               Text(
-                'Pusat Kendali Admin',
+                'Akses Penuh Pendeta',
                 style: GoogleFonts.montserrat(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
@@ -331,11 +327,11 @@ class _PastorDashboardScreenState extends State<PastorDashboardScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Kelola data jemaat, jadwal ibadah, serta konten publikasi gereja. Seluruh perubahan akan otomatis disinkronisasi ke aplikasi jemaat.',
+                'Gunakan panel ini untuk mengelola jemaat, jadwal, dan konten secara real-time.',
                 style: GoogleFonts.montserrat(
                   color: Colors.white.withOpacity(0.8),
                   fontSize: 13,
-                  height: 1.6,
+                  height: 1.5,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -354,7 +350,7 @@ class _PastorDashboardScreenState extends State<PastorDashboardScreen> {
             icon: Icons.calendar_month_rounded,
             title: 'Kelola\nAgenda',
             color: const Color(0xFF4361EE),
-            onTap: () => context.push('/pastor-agenda'),
+            onTap: () => widget.onTabSelected?.call(3),
           ),
         ),
         const SizedBox(width: 16),
@@ -363,7 +359,7 @@ class _PastorDashboardScreenState extends State<PastorDashboardScreen> {
             icon: Icons.article_rounded,
             title: 'Kelola\nKonten',
             color: const Color(0xFFF72585),
-            onTap: () => context.push('/pastor-konten'),
+            onTap: () => widget.onTabSelected?.call(2),
           ),
         ),
       ],
@@ -385,7 +381,7 @@ class _PastorDashboardScreenState extends State<PastorDashboardScreen> {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: Colors.black.withOpacity(0.02),
               blurRadius: 15,
               offset: const Offset(0, 5),
             ),
@@ -398,7 +394,7 @@ class _PastorDashboardScreenState extends State<PastorDashboardScreen> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(15),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(icon, color: color, size: 24),
             ),
@@ -414,32 +410,6 @@ class _PastorDashboardScreenState extends State<PastorDashboardScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _handleLogout(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Konfirmasi Logout', style: GoogleFonts.montserrat(fontWeight: FontWeight.w800, color: navy)),
-        content: Text('Apakah Anda yakin ingin keluar dari akun Pendeta?', style: GoogleFonts.montserrat(fontWeight: FontWeight.w500)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Batal', style: GoogleFonts.montserrat(color: textGrey, fontWeight: FontWeight.bold)),
-          ),
-          TextButton(
-            onPressed: () async {
-              final authProvider = Provider.of<AuthProvider>(context, listen: false);
-              Navigator.pop(context);
-              await authProvider.logout();
-              if (context.mounted) context.go('/home');
-            },
-            child: Text('Keluar', style: GoogleFonts.montserrat(color: Colors.red, fontWeight: FontWeight.bold)),
-          ),
-        ],
       ),
     );
   }

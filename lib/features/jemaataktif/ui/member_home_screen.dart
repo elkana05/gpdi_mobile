@@ -461,7 +461,7 @@ class _MemberHomeScreenState extends State<MemberHomeScreen> {
       ),
       child: Column(
         children: [
-          Icon(Icons.notifications_off_rounded, size: 48, color: Colors.grey.withOpacity(0.3)),
+          Icon(Icons.campaign_rounded, size: 48, color: Colors.grey.withOpacity(0.3)),
           const SizedBox(height: 16),
           Text(
             message,

@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import '../../auth/providers/auth_provider.dart';
-import 'home_screen.dart';
-import '../../alkitab/ui/alkitab_screen.dart';
-import '../../profile/ui/profile_screen.dart';
-import '../../jemaataktif/ui/member_profile_screen.dart';
 
 class AppBottomNavigation extends StatelessWidget {
   final int currentIndex;
@@ -25,32 +22,17 @@ class AppBottomNavigation extends StatelessWidget {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final isLoggedIn = authProvider.status == AuthStatus.authenticated;
 
-    Widget targetPage;
-
     if (index == 0) {
-      targetPage = const HomeScreen();
+      context.go('/home');
     } else if (index == 1) {
-      targetPage = const AlkitabScreen();
-    } else {
-      targetPage = isLoggedIn ? const MemberProfileScreen() : const ProfileScreen();
+      context.go('/alkitab');
+    } else if (index == 2) {
+      if (isLoggedIn) {
+        context.go('/member-profile');
+      } else {
+        context.go('/profile-guest');
+      }
     }
-
-    Navigator.pushReplacement(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => targetPage,
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          const begin = Offset(0.0, 0.05);
-          const end = Offset.zero;
-          const curve = Curves.easeOut;
-          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-          return FadeTransition(
-            opacity: animation,
-            child: SlideTransition(position: animation.drive(tween), child: child),
-          );
-        },
-      ),
-    );
   }
 
   @override

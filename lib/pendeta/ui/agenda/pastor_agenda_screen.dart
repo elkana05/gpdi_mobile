@@ -286,7 +286,14 @@ class _PastorAgendaScreenState extends State<PastorAgendaScreen> with SingleTick
       child: TextFormField(
         initialValue: initialValue,
         maxLines: maxLines,
-        decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon, color: navy), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+        style: GoogleFonts.montserrat(fontSize: 14, fontWeight: FontWeight.w500),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: GoogleFonts.montserrat(fontSize: 13, color: textGrey),
+          prefixIcon: Icon(icon, color: navy, size: 20),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: navy, width: 1.5)),
+        ),
         validator: required ? (v) => (v == null || v.isEmpty) ? 'Wajib diisi' : null : null,
         onSaved: onSaved,
       ),
@@ -300,7 +307,13 @@ class _PastorAgendaScreenState extends State<PastorAgendaScreen> with SingleTick
         controller: controller,
         readOnly: true,
         onTap: onTap,
-        decoration: InputDecoration(labelText: label, prefixIcon: const Icon(Icons.calendar_today, color: navy), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+        style: GoogleFonts.montserrat(fontSize: 14, fontWeight: FontWeight.w500),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: GoogleFonts.montserrat(fontSize: 13, color: textGrey),
+          prefixIcon: const Icon(Icons.calendar_today, color: navy, size: 20),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        ),
         validator: required ? (v) => (v == null || v.isEmpty) ? 'Wajib' : null : null,
       ),
     );
@@ -312,7 +325,12 @@ class _PastorAgendaScreenState extends State<PastorAgendaScreen> with SingleTick
       child: DropdownButtonFormField<String>(
         value: (value == null || value.isEmpty || !items.contains(value)) ? null : value,
         isExpanded: true,
-        decoration: InputDecoration(labelText: label, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+        style: GoogleFonts.montserrat(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: GoogleFonts.montserrat(fontSize: 13, color: textGrey),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        ),
         items: List.generate(items.length, (i) => DropdownMenuItem(value: items[i], child: Text(labels != null ? labels[i] : items[i]))),
         onChanged: onChanged,
         validator: (v) => v == null ? 'Pilih salah satu' : null,
@@ -342,11 +360,15 @@ class _PastorAgendaScreenState extends State<PastorAgendaScreen> with SingleTick
         title: Text('Manajemen Agenda', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, color: navy, fontSize: 18)),
         backgroundColor: Colors.white,
         elevation: 0,
+        scrolledUnderElevation: 0,
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
           labelColor: navy, unselectedLabelColor: textGrey,
           indicatorColor: gold,
+          indicatorWeight: 3,
+          labelStyle: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 12),
+          unselectedLabelStyle: GoogleFonts.montserrat(fontWeight: FontWeight.w600, fontSize: 12),
           tabs: const [Tab(text: 'IBADAH'), Tab(text: 'KEGIATAN'), Tab(text: 'JADWAL RAYON'), Tab(text: 'RAYON')],
         ),
       ),
@@ -362,7 +384,7 @@ class _PastorAgendaScreenState extends State<PastorAgendaScreen> with SingleTick
                     child: _dataList.isEmpty
                         ? _buildEmptyState()
                         : ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
                             itemCount: _dataList.length,
                             itemBuilder: (context, index) => _buildDataCard(_dataList[index]),
                           ),
@@ -380,14 +402,20 @@ class _PastorAgendaScreenState extends State<PastorAgendaScreen> with SingleTick
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Daftar ${_getTabTitle()}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: navy)),
-            const Text('Kelola operasional gereja', style: TextStyle(fontSize: 12, color: textGrey)),
+            Text('Daftar ${_getTabTitle()}', style: GoogleFonts.montserrat(fontSize: 18, fontWeight: FontWeight.bold, color: navy)),
+            Text('Kelola operasional gereja', style: GoogleFonts.montserrat(fontSize: 12, color: textGrey, fontWeight: FontWeight.w500)),
           ]),
           ElevatedButton.icon(
             onPressed: () => _handleOpenModal(),
             icon: const Icon(Icons.add, size: 18),
-            label: const Text('Tambah'),
-            style: ElevatedButton.styleFrom(backgroundColor: navy, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+            label: Text('Tambah', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: navy,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            ),
           ),
         ],
       ),
@@ -399,24 +427,79 @@ class _PastorAgendaScreenState extends State<PastorAgendaScreen> with SingleTick
     String sub = item['location'] ?? item['description'] ?? item['keterangan'] ?? '';
     if (_tabController.index == 0) sub = "${item['day_of_week'] ?? ''} - ${item['start_time'] ?? ''}";
 
-    return Card(
+    bool isPublished = item['status_publish'] == 'published';
+
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15), side: BorderSide(color: Colors.grey.shade200)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(color: navy.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
-          child: Icon(_getTabIcon(), color: navy),
-        ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-        subtitle: Text(sub, style: const TextStyle(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          leading: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: navy.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
+            child: Icon(_getTabIcon(), color: navy, size: 22),
+          ),
+          title: Text(title, style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 14, color: navy)),
+          subtitle: Row(
+            children: [
+              Expanded(child: Text(sub, style: GoogleFonts.montserrat(fontSize: 11, color: textGrey), maxLines: 1, overflow: TextOverflow.ellipsis)),
+              if (_tabController.index != 3) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: isPublished ? Colors.green.withOpacity(0.1) : Colors.amber.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    isPublished ? 'PUBLISHED' : 'DRAFT',
+                    style: GoogleFonts.montserrat(fontSize: 8, fontWeight: FontWeight.w800, color: isPublished ? Colors.green : Colors.amber.shade800),
+                  ),
+                ),
+              ]
+            ],
+          ),
           children: [
-            IconButton(visualDensity: VisualDensity.compact, icon: const Icon(Icons.edit_outlined, color: Colors.orange, size: 20), onPressed: () => _handleOpenModal(item)),
-            IconButton(visualDensity: VisualDensity.compact, icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20), onPressed: () => _handleDelete(item)),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  if (item['description'] != null && item['description'].toString().isNotEmpty) ...[
+                    Text('Deskripsi:', style: GoogleFonts.montserrat(fontSize: 11, fontWeight: FontWeight.bold, color: textGrey)),
+                    Text(item['description'], style: GoogleFonts.montserrat(fontSize: 12, color: Colors.black87)),
+                    const SizedBox(height: 12),
+                  ],
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton.icon(
+                        onPressed: () => _handleOpenModal(item),
+                        icon: const Icon(Icons.edit_outlined, size: 16),
+                        label: const Text('Edit'),
+                        style: TextButton.styleFrom(foregroundColor: Colors.orange),
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton.icon(
+                        onPressed: () => _handleDelete(item),
+                        icon: const Icon(Icons.delete_outline, size: 16),
+                        label: const Text('Hapus'),
+                        style: TextButton.styleFrom(foregroundColor: Colors.red),
+                      ),
+                    ],
+                  )
+                ],
+              ),
+            )
           ],
         ),
       ),
@@ -425,10 +508,10 @@ class _PastorAgendaScreenState extends State<PastorAgendaScreen> with SingleTick
 
   IconData _getTabIcon() {
     switch (_tabController.index) {
-      case 0: return Icons.church;
-      case 1: return Icons.event;
-      case 2: return Icons.calendar_month;
-      default: return Icons.groups;
+      case 0: return Icons.church_rounded;
+      case 1: return Icons.celebration_rounded;
+      case 2: return Icons.calendar_month_rounded;
+      default: return Icons.groups_rounded;
     }
   }
 
@@ -437,11 +520,12 @@ class _PastorAgendaScreenState extends State<PastorAgendaScreen> with SingleTick
     bool confirm = await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Hapus Data?'),
-        content: const Text('Data ini akan dihapus secara permanen.'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Hapus Data?', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, color: navy)),
+        content: Text('Apakah Anda yakin ingin menghapus data ini secara permanen?', style: GoogleFonts.montserrat()),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Hapus', style: TextStyle(color: Colors.red))),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text('Batal', style: GoogleFonts.montserrat(color: textGrey, fontWeight: FontWeight.bold))),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: Text('Hapus', style: GoogleFonts.montserrat(color: Colors.red, fontWeight: FontWeight.bold))),
         ],
       ),
     ) ?? false;
@@ -462,9 +546,9 @@ class _PastorAgendaScreenState extends State<PastorAgendaScreen> with SingleTick
 
   Widget _buildEmptyState() {
     return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      Icon(Icons.inbox_outlined, size: 60, color: Colors.grey.shade300),
-      const SizedBox(height: 10),
-      Text('Belum ada data ${_getTabTitle()}', style: TextStyle(color: Colors.grey.shade500)),
+      Icon(Icons.inbox_rounded, size: 80, color: Colors.grey.shade200),
+      const SizedBox(height: 16),
+      Text('Belum ada data ${_getTabTitle()}', style: GoogleFonts.montserrat(color: Colors.grey, fontWeight: FontWeight.w600)),
     ]));
   }
 

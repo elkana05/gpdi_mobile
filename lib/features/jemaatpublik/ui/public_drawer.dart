@@ -1,16 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import '../../auth/providers/auth_provider.dart';
-import 'home_screen.dart';
-import 'jadwal_ibadah_screen.dart';
-import 'profil_gereja_screen.dart';
-import 'pelayanan_gereja_screen.dart';
-import 'galeri_screen.dart';
-import 'pengumuman_screen.dart';
-import 'public_kontak.dart';
-import '../../auth/ui/login_screen.dart';
-import '../../jemaataktif/ui/member_profile_screen.dart';
 
 enum DrawerMenu {
   beranda,
@@ -35,26 +27,14 @@ class PublicDrawer extends StatelessWidget {
   static const Color gold = Color(0xFFC5A327);
   static const Color surfaceNavy = Color(0xFF13147E);
 
-  void _goToPage(BuildContext context, DrawerMenu targetMenu, Widget page) {
+  void _goToPage(BuildContext context, DrawerMenu targetMenu, String routePath) {
     if (activeMenu == targetMenu) {
       Navigator.pop(context);
       return;
     }
 
-    Navigator.pop(context);
-
-    if (targetMenu == DrawerMenu.beranda) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => page),
-        (route) => false,
-      );
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => page),
-      );
-    }
+    Navigator.pop(context); // Tutup drawer
+    context.go(routePath); // Gunakan GoRouter
   }
 
   @override
@@ -74,12 +54,8 @@ class PublicDrawer extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // PREMIUM HEADER
           _buildHeader(isLoggedIn, user),
-
           const SizedBox(height: 12),
-
-          // MENU LIST
           Expanded(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -102,7 +78,7 @@ class PublicDrawer extends StatelessWidget {
                           icon: Icons.home_rounded,
                           title: 'Beranda',
                           isActive: activeMenu == DrawerMenu.beranda,
-                          onTap: () => _goToPage(context, DrawerMenu.beranda, const HomeScreen()),
+                          onTap: () => _goToPage(context, DrawerMenu.beranda, '/home'),
                         ),
                         if (isLoggedIn)
                           _DrawerMenuItem(
@@ -111,7 +87,7 @@ class PublicDrawer extends StatelessWidget {
                             isActive: false,
                             onTap: () {
                               Navigator.pop(context);
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => const MemberProfileScreen()));
+                              context.go('/member-profile');
                             },
                           ),
                         _buildDivider(),
@@ -119,43 +95,41 @@ class PublicDrawer extends StatelessWidget {
                           icon: Icons.event_note_rounded,
                           title: 'Jadwal Ibadah',
                           isActive: activeMenu == DrawerMenu.jadwalIbadah,
-                          onTap: () => _goToPage(context, DrawerMenu.jadwalIbadah, const JadwalIbadahScreen()),
+                          onTap: () => _goToPage(context, DrawerMenu.jadwalIbadah, '/jadwal-ibadah'),
                         ),
                         _DrawerMenuItem(
                           icon: Icons.church_rounded,
                           title: 'Profil Gereja',
                           isActive: activeMenu == DrawerMenu.profilGereja,
-                          onTap: () => _goToPage(context, DrawerMenu.profilGereja, const ProfilGerejaScreen()),
+                          onTap: () => _goToPage(context, DrawerMenu.profilGereja, '/profil-gereja'),
                         ),
                         _DrawerMenuItem(
                           icon: Icons.volunteer_activism_rounded,
                           title: 'Pelayanan',
                           isActive: activeMenu == DrawerMenu.pelayanan,
-                          onTap: () => _goToPage(context, DrawerMenu.pelayanan, const PelayananGerejaScreen()),
+                          onTap: () => _goToPage(context, DrawerMenu.pelayanan, '/pelayanan'),
                         ),
                         _DrawerMenuItem(
                           icon: Icons.photo_library_rounded,
                           title: 'Galeri Foto',
                           isActive: activeMenu == DrawerMenu.galeri,
-                          onTap: () => _goToPage(context, DrawerMenu.galeri, const GaleriScreen()),
+                          onTap: () => _goToPage(context, DrawerMenu.galeri, '/galeri'),
                         ),
                         _DrawerMenuItem(
                           icon: Icons.campaign_rounded,
                           title: 'Pengumuman',
                           isActive: activeMenu == DrawerMenu.pengumuman,
-                          onTap: () => _goToPage(context, DrawerMenu.pengumuman, const PengumumanScreen()),
+                          onTap: () => _goToPage(context, DrawerMenu.pengumuman, '/pengumuman-publik'),
                         ),
                         _DrawerMenuItem(
                           icon: Icons.location_on_rounded,
                           title: 'Kontak & Lokasi',
                           isActive: activeMenu == DrawerMenu.kontak,
-                          onTap: () => _goToPage(context, DrawerMenu.kontak, const PublicKontakScreen()),
+                          onTap: () => _goToPage(context, DrawerMenu.kontak, '/kontak'),
                         ),
                       ],
                     ),
                   ),
-
-                  // FOOTER ACTIONS
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 24),
                     child: isLoggedIn
@@ -163,11 +137,7 @@ class PublicDrawer extends StatelessWidget {
                             Navigator.pop(context);
                             await authProvider.logout();
                             if (context.mounted) {
-                              Navigator.pushAndRemoveUntil(
-                                context,
-                                MaterialPageRoute(builder: (_) => const HomeScreen()),
-                                (route) => false,
-                              );
+                              context.go('/home');
                             }
                           })
                         : const _LoginButton(),
@@ -303,7 +273,7 @@ class _LoginButton extends StatelessWidget {
     return ElevatedButton.icon(
       onPressed: () {
         Navigator.pop(context);
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+        context.go('/login');
       },
       icon: const Icon(Icons.login_rounded, size: 20),
       label: const Text('MASUK KE AKUN'),
