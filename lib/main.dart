@@ -2,13 +2,16 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
-// Import file internal proyek (Sesuaikan dengan nama package di pubspec.yaml Anda)
 import 'core/router/app_router.dart';
 import 'features/auth/providers/auth_provider.dart';
+import 'features/auth/providers/user_provider.dart';
+import 'features/jemaataktif/providers/admin_provider.dart';
+import 'features/jemaatpublik/providers/content_provider.dart';
+import 'features/jemaatpublik/providers/event_provider.dart';
 
-/// Class untuk mengizinkan koneksi HTTP ke server lokal (Docker)
-/// yang tidak menggunakan sertifikat SSL (HTTPS) resmi.
 class MyHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
@@ -19,26 +22,21 @@ class MyHttpOverrides extends HttpOverrides {
 }
 
 void main() async {
-  // 1. Wajib dipanggil jika ada kode async sebelum runApp
   WidgetsFlutterBinding.ensureInitialized();
-
-  // 2. Terapkan bypass SSL khusus untuk tahap development
+  await initializeDateFormatting('id_ID', null);
   HttpOverrides.global = MyHttpOverrides();
 
-  // 3. Inisialisasi AuthProvider di luar widget tree
-  // agar kita bisa mengecek status token sebelum aplikasi benar-benar tampil.
   final authProvider = AuthProvider();
   await authProvider.checkAuth();
 
   runApp(
     MultiProvider(
       providers: [
-        // Daftarkan AuthProvider agar bisa diakses di seluruh aplikasi
         ChangeNotifierProvider.value(value: authProvider),
-
-        // Nantinya developer lain tinggal menambahkan Provider mereka di sini:
-        // ChangeNotifierProvider(create: (_) => EventProvider()),
-        // ChangeNotifierProvider(create: (_) => ContentProvider()),
+        ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (_) => ContentProvider()),
+        ChangeNotifierProvider(create: (_) => EventProvider()),
+        ChangeNotifierProvider(create: (_) => AdminProvider()),
       ],
       child: const GPdISibuleleApp(),
     ),
@@ -53,43 +51,34 @@ class GPdISibuleleApp extends StatelessWidget {
     return MaterialApp.router(
       title: 'GPdI Sibulele',
       debugShowCheckedModeBanner: false,
-
-      // Menggunakan konfigurasi router dari AppRouter
       routerConfig: appRouter,
-
-      // Konfigurasi Tema Global
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('id', 'ID'),
+        Locale('en', 'US'),
+      ],
+      locale: const Locale('id', 'ID'),
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF0D1282), // Warna Biru GPdI
-          primary: const Color(0xFF0D1282),
-          secondary: const Color(0xFFD71313), // Warna Merah GPdI
+          seedColor: const Color(0xFF05066F),
+          primary: const Color(0xFF05066F),
+          secondary: const Color(0xFFC5A327),
         ),
-
-        // Menggunakan font standar agar UI terlihat profesional di semua device
-        textTheme: GoogleFonts.montserratTextTheme(
-          Theme.of(context).textTheme,
-        ),
-
-        // Standarisasi styling tombol
+        textTheme: GoogleFonts.montserratTextTheme(Theme.of(context).textTheme),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF0D1282),
+            backgroundColor: const Color(0xFF05066F),
             foregroundColor: Colors.white,
-            minimumSize: const Size(double.infinity, 50),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            // Perbaikan: Jangan gunakan double.infinity di sini karena merusak tombol di dalam Row
+            minimumSize: const Size(88, 54),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            elevation: 2,
           ),
-        ),
-
-        // Standarisasi styling input field (TextFormField)
-        inputDecorationTheme: InputDecorationTheme(
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          filled: true,
-          fillColor: Colors.grey[50],
         ),
       ),
     );
