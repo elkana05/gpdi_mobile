@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../../../core/network/api_client.dart';
 import '../services/auth_service.dart';
 import '../models/user_model.dart';
 
@@ -19,40 +20,48 @@ class AuthProvider extends ChangeNotifier {
 
   /// Cek status login saat aplikasi pertama kali dibuka
   Future<void> checkAuth() async {
-    final token = await _storage.read(key: 'jwt_token');
-    if (token != null) {
-      try {
+    try {
+      final token = await _storage.read(key: 'jwt_token');
+      if (token != null) {
+        // Pastikan ApiClient tahu tentang token ini (jika baru di-restart)
+        ApiClient().resetToken();
+
         _user = await _authService.getMe();
         _status = AuthStatus.authenticated;
-      } catch (e) {
-        await logout(); // Token mungkin expired
+      } else {
+        _status = AuthStatus.unauthenticated;
       }
-    } else {
-      _status = AuthStatus.unauthenticated;
+    } catch (e) {
+      debugPrint("CheckAuth Error: $e");
+      await logout();
     }
     notifyListeners();
   }
 
-  /// Proses Login (Versi Teroptimasi)
+  /// Proses Login
   Future<bool> login(String email, String password) async {
     _status = AuthStatus.authenticating;
     _errorMessage = '';
     notifyListeners();
 
     try {
-      // Dapatkan token dan user dari auth_service
       final result = await _authService.login(email: email, password: password);
 
-      // Simpan token ke brankas
+      // Reset token di ApiClient agar mengambil yang baru dari storage
+      ApiClient().resetToken();
+
+      // Pastikan token tersimpan sebelum lanjut
       await _storage.write(key: 'jwt_token', value: result['token']);
 
-      // Langsung masukkan data user (TIDAK PERLU panggil getMe() lagi!)
       _user = result['user'];
-
       _status = AuthStatus.authenticated;
+
+      debugPrint("Login Success: User ${_user?.fullName} authenticated with roles: ${_user?.roles}");
+
       notifyListeners();
       return true;
     } catch (e) {
+      debugPrint("Login Provider Error: $e");
       _status = AuthStatus.error;
       _errorMessage = e.toString().replaceAll('Exception: ', '');
       notifyListeners();
@@ -62,7 +71,13 @@ class AuthProvider extends ChangeNotifier {
 
   /// Proses Logout
   Future<void> logout() async {
-    await _storage.delete(key: 'jwt_token');
+    try {
+      await _storage.delete(key: 'jwt_token');
+      // Penting: Reset token di ApiClient
+      ApiClient().resetToken();
+    } catch (e) {
+      debugPrint("Logout Error (Storage): $e");
+    }
     _user = null;
     _status = AuthStatus.unauthenticated;
     notifyListeners();
